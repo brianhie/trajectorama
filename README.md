@@ -12,18 +12,18 @@ Coscape is tested with Python version 3.7 on Ubuntu 18.04.
 There are a number of dependencies
 
 Scientific python included in Anaconda (tested versions listed below):
-scikit-learn (0.20.3)
-numpy (1.16.2)
-scipy (1.3.0)
-matplotlib (3.0.3)
-networkx (2.2)
+- scikit-learn (0.20.3)
+- numpy (1.16.2)
+- scipy (1.3.0)
+- matplotlib (3.0.3)
+- networkx (2.2)
 
 Other packages (tested with versions listed below):
-fa2 (0.3.5)
-scanpy (1.4.4)
-scanorama (1.4)
-geosketch (1.0)
-python-igraph (0.7.1)
+- fa2 (0.3.5)
+- scanpy (1.4.4)
+- scanorama (1.4)
+- geosketch (1.0)
+- python-igraph (0.7.1)
 
 The pipeline also requires a custom implementation of Louvain clustering, which can be installed with the below commands:
 ```
