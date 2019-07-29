@@ -28,7 +28,6 @@ The pipeline also requires a custom implementation of Louvain clustering, which 
 git clone https://github.com/brianhie/louvain-igraph
 cd louvain-igraph
 python setup.py install
-
 ```
 
 ### Coscape for mouse neuronal development
