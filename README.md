@@ -5,7 +5,7 @@ Coscape is an algorithm that implements coexpression-based integrative analysis 
 
 **Coscape is still under active development. Follow the repository for changes and improvements.**
 
-#### Dependencies
+### Dependencies
 
 Coscape is tested with Python version 3.7 on Ubuntu 18.04.
 
@@ -33,7 +33,7 @@ python setup.py install
 
 ```
 
-#### Coscape for mouse neuronal development
+### Coscape for mouse neuronal development
 
 Coscape analyzes five large-scale studies of mouse neurons over multiple points in development.
 
@@ -58,7 +58,7 @@ python bin/mouse_develop_dictionary.py >> mouse_develop.log
 This will log some relevant statistics and save visualizations under the `figures/` directory.
 
 
-#### Coscape for human hematopoiesis
+### Coscape for human hematopoiesis
 
 We can perform a similar workflow for human hematopoiesis by running the commands:
 ```
@@ -69,6 +69,6 @@ python bin/hematopoiesis_cached.py >> hematopoiesis.log
 python bin/hematopoiesis_dictionary.py >> hematopoiesis.log
 ```
 
-#### Questions
+### Questions
 
 Create an issue in the repository or contact brianhie@mit.edu for any pertinent questions or concerns. We will do our best to answer promptly and feel free to create a pull request and contribute!
