@@ -115,7 +115,7 @@ if __name__ == '__main__':
         reassemble_K=REASSEMBLE_K,
         random_projection=RANDOM_PROJ,
         dictionary_learning=True,
-        n_jobs=42,
+        n_jobs=1,
         verbose=2,
     )
 
