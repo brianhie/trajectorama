@@ -7,18 +7,16 @@ Coscape is an algorithm that implements coexpression-based integrative analysis 
 
 ### Dependencies
 
-Coscape is tested with Python version 3.7 on Ubuntu 18.04.
+Coscape is tested with Python version 3.7 on Ubuntu 18.04. There are a number of Python package dependencies.
 
-There are a number of dependencies
-
-Scientific python included in Anaconda (tested versions listed below):
+Scientific python packages included in [Anaconda](https://www.anaconda.com/distribution/) are listed below (tested versions listed):
 - scikit-learn (0.20.3)
 - numpy (1.16.2)
 - scipy (1.3.0)
 - matplotlib (3.0.3)
 - networkx (2.2)
 
-Other packages (tested with versions listed below):
+Other packages are listed below (tested versions listed):
 - fa2 (0.3.5)
 - scanpy (1.4.4)
 - scanorama (1.4)
