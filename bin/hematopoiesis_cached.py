@@ -20,11 +20,11 @@ N_COMPONENTS = 15
 INIT = 'eigen'
 
 VIZ_CELL_TYPES = True
-VIZ_LOUVAIN = False
-VIZ_SPARSITY = False
-VIZ_STUDY = False
-VIZ_DICT_LEARN = False
-VIZ_CORR_COMP = False
+VIZ_LOUVAIN = True
+VIZ_SPARSITY = True
+VIZ_STUDY = True
+VIZ_DICT_LEARN = True
+VIZ_CORR_COMP = True
 
 def srp_worker(X, srp, triu_idx):
     return srp.transform(np.abs(X.toarray())[triu_idx].reshape(1, -1))[0]
@@ -35,11 +35,11 @@ def savefig(fname, ax):
     ymin, ymax = ax.get_ylim()
     ax.set_aspect(abs((xmax - xmin) / (ymax - ymin)) * ratio)
     plt.savefig(fname)
-    
+
 if __name__ == '__main__':
 
     dirname = 'target/sparse_correlations/{}'.format(NAMESPACE)
-    
+
     with open('{}/genes.txt'.format(dirname)) as f:
         genes = f.read().rstrip().split('\n')
 
@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     srp = None
     triu_idx = None
-            
+
     Xs = []
     node_idxs = []
     sparsities = []
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     #    save='_{}_highlight_dense_all.png'.format(NAMESPACE)
     #)
     #exit()
-    
+
     n_features = Xs[0].shape[0]
     n_correlations = int(comb(n_features, 2) + n_features)
     triu_idx = np.triu_indices(n_features)
@@ -120,7 +120,7 @@ if __name__ == '__main__':
         X[nonzero_tup].A.flatten()
         for X in Xs
     ]
-    
+
     #analyze_dense(Xs, Xs_dimred, sparsities, node_sizes)
 
     #srp = SparseRandomProjection(
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     #    delayed(srp_worker)(X, srp, triu_idx)
     #    for X in Xs
     #)
-    
+
     # Change from lexicographic ordering to numeric.
     ordered = [ node_idxs.index(i) for i in sorted(node_idxs) ]
     Xs = [ Xs[o] for o in ordered  ]
@@ -159,7 +159,7 @@ if __name__ == '__main__':
                         if 'human_pbmc_zheng_CD4+' in ct ]
             cd8_idx = [ idx for idx, ct in enumerate(uniq_cell_types)
                         if 'human_pbmc_zheng_CD8+' in ct ]
-            
+
             comps = []
             for line in f:
                 fields = line.rstrip().split()
@@ -183,7 +183,7 @@ if __name__ == '__main__':
             savefig('figures/draw_graph_fa_{}_cell_type_{}.png'
                     .format(NAMESPACE, cell_type), ax)
         exit()
-                
+
         max_cell_types = [
             uniq_cell_types[np.argmax(comps[i])]
             for i in range(adata.X.shape[0])
@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
         for knn in [ 15, 20, 30, 40 ]:
             sc.pp.neighbors(adata, n_neighbors=knn, use_rep='X')
-            
+
             draw_graph(adata, layout='fa')
             ax = sc.pl.draw_graph(
                 adata, color='max_cell_type', edges=True, edges_color='#CCCCCC',
@@ -206,7 +206,7 @@ if __name__ == '__main__':
 
         for knn in [ 15, 20, 30, 40 ]:
             sc.pp.neighbors(adata, n_neighbors=knn, use_rep='X')
-            
+
             draw_graph(adata, layout='fa')
             ax = sc.pl.draw_graph(
                 adata, color='study', edges=True, edges_color='#CCCCCC',
@@ -214,13 +214,13 @@ if __name__ == '__main__':
             )
             savefig('figures/draw_graph_fa_{}_cluster_trajectory_study_k{}.png'
                     .format(NAMESPACE, knn), ax)
-            
+
             #sc.tl.umap(adata, min_dist=0.25)
             #sc.pl.scatter(
             #    adata, color='study', basis='umap',
             #    save='_{}_umap_study_k{}.png'.format(NAMESPACE, knn)
             #)
-            
+
         sc.pp.neighbors(adata, n_neighbors=30, use_rep='X')
         draw_graph(adata, layout='fa')
         sc.tl.umap(adata)
@@ -232,7 +232,7 @@ if __name__ == '__main__':
             )
             savefig('figures/draw_graph_fa_{}_cluster_trajectory_{}.png'
                     .format(NAMESPACE, study), ax)
-            
+
             sc.pl.scatter(
                 adata, color=study, basis='umap',
                 save='_{}_umap_{}.png'.format(NAMESPACE, study)
@@ -259,7 +259,7 @@ if __name__ == '__main__':
     if VIZ_SPARSITY:
         adata.obs['sparsity'] = sparsities
         adata.obs['sizes'] = np.log10(node_sizes)
-        
+
         sc.pp.neighbors(adata, n_neighbors=30, use_rep='X')
         draw_graph(adata, layout='fa')
         sc.tl.umap(adata)
@@ -273,7 +273,7 @@ if __name__ == '__main__':
         sc.pl.scatter(
             adata, color='sparsity', basis='umap',
             save='_{}_umap_sparsity.png'.format(NAMESPACE)
-        )        
+        )
         ax = sc.pl.draw_graph(
             adata, color='sizes', edges=True, edges_color='#CCCCCC',
             show=False,
@@ -283,7 +283,7 @@ if __name__ == '__main__':
         sc.pl.scatter(
             adata, color='sizes', basis='umap',
             save='_{}_umap_sizes.png'.format(NAMESPACE)
-        )        
+        )
 
     if VIZ_DICT_LEARN:
         sc.pp.neighbors(adata, n_neighbors=30, use_rep='X')
@@ -305,7 +305,7 @@ if __name__ == '__main__':
             positive_dict=True,
         )
         weights = dl.fit_transform(adata.X)
-        
+
         np.savetxt('{}/weights.txt'.format(dirname), weights)
 
         for comp in range(N_COMPONENTS):
@@ -359,7 +359,7 @@ if __name__ == '__main__':
         comp_names = [
             'progenitor', 'lymphoid', 'myeloid', 'erythroid'
         ]
-        
+
         pair2corr = {}
         assert(len(gene_pairs) == X_dimred.shape[1])
         for comp, name in zip(comps, comp_names):
@@ -373,7 +373,7 @@ if __name__ == '__main__':
                     pair2corr.items(), key=lambda kv: -kv[1]
             ):
                 print('{}\t{}\t{}'.format(pair[0], pair[1], corr))
-                
+
                 if pair == ('CD34', 'CD34') or pair == ('HLA-DRB1', 'HLA-DRB5') or \
                    pair == ('FTH1', 'MALAT1') or pair == ('GYPC', 'HBB'):
                     pair_name = '_'.join(pair)
