@@ -17,13 +17,13 @@ Scientific python packages included in [Anaconda](https://www.anaconda.com/distr
 - networkx (2.2)
 
 Other packages are listed below (tested versions listed):
-- fa2 (0.3.5)
-- scanpy (1.4.4)
-- scanorama (1.4)
-- geosketch (1.0)
-- python-igraph (0.7.1)
+- [fa2](https://github.com/bhargavchippada/forceatlas2) (0.3.5)
+- [scanpy](https://scanpy.readthedocs.io/en/stable/) (1.4.4)
+- [scanorama](https://github.com/brianhie/scanorama) (1.4)
+- [geosketch](https://github.com/brianhie/geosketch) (1.0)
+- [python-igraph](https://igraph.org/python/) (0.7.1)
 
-The pipeline also requires a custom implementation of Louvain clustering, which can be installed with the below commands:
+The pipeline also requires a [custom implementation](https://github.com/brianhie/louvain-igraph) of Louvain clustering, which can be installed with the below commands:
 ```
 git clone https://github.com/brianhie/louvain-igraph
 cd louvain-igraph
