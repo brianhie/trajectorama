@@ -34,9 +34,9 @@ python setup.py install
 
 Coscape analyzes five large-scale studies of mouse neurons over multiple points in development.
 
-Data can be found at http://cb.csail.mit.edu/cb/coscape/mouse_data.tar.gz and can be downloaded as:
+Data can be found at http://coscape.csail.mit.edu/data_mouse_develop.tar.gz and can be downloaded as:
 ```
-wget http://cb.csail.mit.edu/cb/coscape/data_mouse_develop.tar.gz
+wget http://coscape.csail.mit.edu/data_mouse_develop.tar.gz
 tar xvf data_mouse_develop.tar.gz
 ```
 
@@ -59,7 +59,7 @@ This will log some relevant statistics and save visualizations under the `figure
 
 We can perform a similar workflow for human hematopoiesis by running the commands:
 ```
-wget http://cb.csail.mit.edu/cb/coscape/data_hematopoiesis.tar.gz
+wget http://coscape.csail.mit.edu/data_hematopoiesis.tar.gz
 tar xvf data_hematopoiesis.tar.gz
 python bin/hematopoiesis.py > hematopoiesis.log
 python bin/hematopoiesis_cached.py >> hematopoiesis.log
