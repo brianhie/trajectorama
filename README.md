@@ -1,7 +1,7 @@
 
 ## Coscape
 
-Coscape is an algorithm that implements coexpression-based integrative analysis of multi-study single cell transcriptomics. Coscape is described in the paper "Coexpression uncovers a unified single-cell transcriptomic landscape" by Brian Hie, Hyunghoon Cho, Bryan Bryson, and Bonnie Berger.
+Coscape is an algorithm that implements coexpression-based integrative analysis of multi-study single cell transcriptomics. Coscape is described in the paper ["Coexpression uncovers a unified single-cell transcriptomic landscape"](https://www.biorxiv.org/content/10.1101/719088v1) by Brian Hie, Hyunghoon Cho, Bryan Bryson, and Bonnie Berger.
 
 **Coscape is still under active development. Follow the repository for changes and improvements.**
 
