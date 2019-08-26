@@ -37,11 +37,8 @@ def dispersion(X, eps=1e-10):
     nonzero_idx = np.nonzero(mean > eps)[1]
     X_nonzero = X[:, nonzero_idx]
     nonzero_mean = X_nonzero.mean(0)
-    X_nonzero.data = X_nonzero.data ** 2
-    nonzero_var = (
-        (X_nonzero.sum(0) / X_nonzero.shape[0]) -
-        np.power(nonzero_mean, 2)
-    )
+    X_nonzero.data = np.power(X_nonzero.data, 2)
+    nonzero_var = X_nonzero.mean(0) - np.power(nonzero_mean, 2)
     nonzero_dispersion = nonzero_var / nonzero_mean
     dispersion[mean > eps] = nonzero_dispersion.A1
     dispersion[mean <= eps] = 0
