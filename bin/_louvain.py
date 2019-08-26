@@ -1,9 +1,10 @@
-from typing import Optional, Tuple, Sequence, Type, Mapping, Any
+from typing import Optional, Tuple, Sequence, Type, Mapping, Any, Union
 
 import numpy as np
 import pandas as pd
 from anndata import AnnData
 from natsort import natsorted
+from numpy.random.mtrand import RandomState
 from scipy.sparse import spmatrix
 
 from scanpy import utils
@@ -21,7 +22,7 @@ except ImportError:
 def louvain(
     adata: AnnData,
     resolution: Optional[float] = None,
-    random_state: int = 0,
+    random_state: Optional[Union[int, RandomState]] = 0,
     log_fname: str = '',
     restrict_to: Optional[Tuple[str, Sequence[str]]] = None,
     key_added: Optional[str] = 'louvain',
@@ -167,9 +168,9 @@ def louvain(
     logg.info(
         '    finished',
         time=start,
-        deep=(
-            f'found {len(np.unique(groups))} clusters and added\n'
-            f'    {key_added!r}, the cluster labels (adata.obs, categorical)'
-        ),
+        #deep=(
+        #    f'found {len(np.unique(groups))} clusters and added\n'
+        #    f'    {key_added!r}, the cluster labels (adata.obs, categorical)'
+        #),
     )
     return adata if copy else None

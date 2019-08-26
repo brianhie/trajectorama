@@ -111,7 +111,6 @@ def correct_scvi(Xs, genes):
 
     return latent
 
-
 if __name__ == '__main__':
     dirname = 'target/sparse_correlations/{}'.format(NAMESPACE)
     mkdir_p(dirname)
@@ -120,10 +119,10 @@ if __name__ == '__main__':
     for i, dataset in enumerate(all_datasets):
         genes_hvg, _ = hvg([dataset.X], dataset.var['gene_symbols'], 'dispersion')
         if hv_genes is None:
-            hv_genes = set([ g for gene in genes_hvg[:9690]
+            hv_genes = set([ g for gene in genes_hvg[:12000]
                              for g in gene.split(';') ])
         else:
-            hv_genes &= set([ g for gene in genes_hvg[:9690]
+            hv_genes &= set([ g for gene in genes_hvg[:12000]
                               for g in gene.split(';') ])
         tprint('{}: {}'.format(all_namespaces[i], len(hv_genes)))
         sys.stdout.flush()
@@ -173,7 +172,7 @@ if __name__ == '__main__':
         dictionary_learning=True,
         n_jobs=1,
         verbose=2,
-    )#.fit(X)
+    )
 
     studies = [ 'mouse_develop' ]
     curr_idx = 0
@@ -210,7 +209,7 @@ if __name__ == '__main__':
 
     exit()
 
-    expr_type = 'scvi'
+    expr_type = 'uncorrected'
 
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)
