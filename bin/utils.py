@@ -30,16 +30,20 @@ def tprint(string):
     sys.stdout.write(str(datetime.datetime.now()) + ' | ')
     sys.stdout.write(string + '\n')
     sys.stdout.flush()
-    
+
 def dispersion(X, eps=1e-10):
     mean = X.mean(0)
     dispersion = np.zeros(mean.shape)
     nonzero_idx = np.nonzero(mean > eps)[1]
     X_nonzero = X[:, nonzero_idx]
     nonzero_mean = X_nonzero.mean(0)
-    nonzero_var = (X_nonzero.multiply(X_nonzero)).mean(0)
-    temp = (nonzero_var / nonzero_mean)
-    dispersion[mean > eps] = temp.A1
+    X_nonzero.data = X_nonzero.data ** 2
+    nonzero_var = (
+        (X_nonzero.sum(0) / X_nonzero.shape[0]) -
+        np.power(nonzero_mean, 2)
+    )
+    nonzero_dispersion = nonzero_var / nonzero_mean
+    dispersion[mean > eps] = nonzero_dispersion.A1
     dispersion[mean <= eps] = 0
     return dispersion.flatten()
 
@@ -59,7 +63,7 @@ def hvg(datasets, genes, hvg_type='dispersion'):
 
     highest_vary_idx = np.argsort(vary)[::-1]
     genes = genes[highest_vary_idx]
-    
+
     return genes, list(reversed(list(np.sort(vary.flatten()))))
 
 def mkdir_p(path):
@@ -91,7 +95,7 @@ def nearest_exact(X, sites):
                          'feature dimension.')
 
     from sklearn.neighbors import NearestNeighbors as NN
-    
+
     nn = NN(n_neighbors=1, metric='manhattan').fit(sites)
     ind = nn.kneighbors(X)[1]
 
@@ -105,7 +109,7 @@ def nearest_exact(X, sites):
 
 def nearest_approx(X, sites):
     from annoy import AnnoyIndex
-    
+
     assert(X.shape[1] == sites.shape[1])
 
     # Build index over site points.
@@ -140,7 +144,7 @@ def print_gene_modules(corr, genes):
     ap = AffinityPropagation(
         affinity='precomputed',
     ).fit(corr)
-    
+
     modules = {}
     for feature_idx, label in enumerate(ap.labels_):
         if label not in modules:
@@ -155,7 +159,7 @@ def print_gene_modules(corr, genes):
         print('\n'.join([
             str(genes[f_idx]) for f_idx in modules[label]
         ]))
-        
+
 def visualize_dictionary(ct, X_dimred, genes, cell_types,
                          namespace, dag_method, verbose=True):
     from anndata import AnnData
@@ -164,7 +168,7 @@ def visualize_dictionary(ct, X_dimred, genes, cell_types,
     import seaborn as sns
 
     # KNN and UMAP.
-    
+
     if verbose:
         tprint('Constructing KNN graph...')
     adata = AnnData(X=X_dimred)
@@ -178,7 +182,7 @@ def visualize_dictionary(ct, X_dimred, genes, cell_types,
     embedding[embedding > 20] = 20
 
     # Visualize cell types.
-    
+
     le = LabelEncoder().fit(cell_types)
     cell_types_int = le.transform(cell_types)
     visualize(
@@ -198,7 +202,7 @@ def visualize_dictionary(ct, X_dimred, genes, cell_types,
         print('\nCluster {}'.format(c_idx))
 
         print_cell_types(cell_types, intensity)
-        
+
         # Visualize cluster in UMAP coordinates.
 
         plt.figure()
@@ -216,14 +220,14 @@ def visualize_dictionary(ct, X_dimred, genes, cell_types,
                     .format(namespace, dag_method, c_idx), dpi=500)
 
         intensity = (intensity > 0.8) * 1
-        
+
         plt.figure()
         plt.title('Cluster {}'.format(c_idx))
         plt.scatter(embedding[:, 0], embedding[:, 1],
                     c=intensity, cmap=cm.get_cmap('Blues'), s=1)
         plt.savefig('{}_pan_umap_{}_member{}.png'
                     .format(namespace, dag_method, c_idx), dpi=500)
-        
+
     for c_idx in range(ct.labels_.shape[1]):
 
         # Visualize covariance matrix.
@@ -234,7 +238,7 @@ def visualize_dictionary(ct, X_dimred, genes, cell_types,
         #print('\nCluster {}'.format(c_idx))
 
         #print_gene_modules(corr, genes)
-    
+
         gene_idx = np.sum(np.abs(corr), axis=1) > 0
         if np.sum(gene_idx) == 0:
             continue
@@ -256,20 +260,20 @@ def visualize_dictionary(ct, X_dimred, genes, cell_types,
 
 def save_mtx(dir_name, X, genes):
     X = X.tocoo()
-    
+
     if not os.path.exists(dir_name):
         mkdir_p(dir_name)
 
     with open(dir_name + '/matrix.mtx', 'w') as f:
         f.write('%%MatrixMarket matrix coordinate integer general\n')
-        
+
         f.write('{} {} {}\n'.format(X.shape[1], X.shape[0], X.nnz))
 
         try:
             from itertools import izip
         except ImportError:
             izip = zip
-        
+
         for i, j, val in izip(X.row, X.col, X.data):
             f.write('{} {} {}\n'.format(j + 1, i + 1, int(val)))
 
