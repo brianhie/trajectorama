@@ -40,14 +40,17 @@ wget http://coscape.csail.mit.edu/data_mouse_develop.tar.gz
 tar xvf data_mouse_develop.tar.gz
 ```
 
-To preprocess and load the data, run the command
+To preprocess the data, run the command:
+```
+python bin/process.py conf/mouse_develop.txt
+```
+This preprocessing step only needs to be done once. Then, we perform panclustering and coexpression matrix computation using the command:
 ```
 python bin/mouse_develop.py > mouse_develop.log
 ```
+This will save each coexpression matrix as a `.npz` file to a directory under `target/sparse_correlations/`.
 
-This will save the coexpression matrices to a directory under `target/sparse_correlations/`.
-
-The downstream analysis can then be performed on these cached matrices using the commands
+The downstream analysis can then be performed on these cached matrices using the commands:
 ```
 python bin/mouse_develop_cached.py >> mouse_develop.log
 python bin/mouse_develop_dictionary.py >> mouse_develop.log
@@ -59,8 +62,12 @@ This will log some relevant statistics and save visualizations under the `figure
 
 We can perform a similar workflow for human hematopoiesis by running the commands:
 ```
+# Download and preprocess.
 wget http://coscape.csail.mit.edu/data_hematopoiesis.tar.gz
 tar xvf data_hematopoiesis.tar.gz
+python bin/process.py conf/hematopoiesis.txt
+
+# Analyze.
 python bin/hematopoiesis.py > hematopoiesis.log
 python bin/hematopoiesis_cached.py >> hematopoiesis.log
 python bin/hematopoiesis_dictionary.py >> hematopoiesis.log
