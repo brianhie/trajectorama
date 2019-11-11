@@ -48,7 +48,7 @@ This preprocessing step only needs to be done once. Then, we perform panclusteri
 ```
 python bin/mouse_develop.py > mouse_develop.log
 ```
-This will save each coexpression matrix as a `.npz` file to a directory under `target/sparse_correlations/`.
+This will save each coexpression matrix as a `.npz` file to a directory under `target/sparse_correlations/`. Computing all coexpression matrices should complete in around an hour when running on a single core.
 
 The downstream analysis can then be performed on these cached matrices using the commands:
 ```
