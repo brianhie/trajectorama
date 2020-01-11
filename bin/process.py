@@ -26,6 +26,7 @@ def load_tab(fname, delim='\t'):
             if fname.endswith('.gz'):
                 line = line.decode('utf-8')
             fields = line.rstrip().replace('"', '').split(delim)
+
             genes.append(fields[0])
             X.append([ float(f) for f in fields[1:] ])
 
@@ -124,6 +125,9 @@ def load_h5(fname, genome='GRCh38'):
     return X, np.array(genes)
 
 def process_tab(fname, min_trans=MIN_TRANSCRIPTS, delim='\t'):
+    if fname.endswith('.csv') or fname.endswith('.csv.gz'):
+        delim = ','
+
     X, cells, genes = load_tab(fname, delim=delim)
 
     gt_idx = [ i for i, s in enumerate(np.sum(X != 0, axis=1))

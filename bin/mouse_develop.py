@@ -73,6 +73,18 @@ def correct_scanorama(Xs, genes):
     X = vstack(Xs)
     return X
 
+def correct_seurat(Xs, genes):
+    for X_idx, X in enumerate(Xs):
+        adata = AnnData(X.todense())
+        adata.raw = adata
+        adata.var_names = genes
+        adata.obs_names = [ 'cell_{}_{}'.format(X_idx, i)
+                            for i in range(X.shape[0]) ]
+        adata.write('target/tmp/correct_seurat_{}.h5ad'.format(X_idx + 1))
+
+    exit()
+
+
 def correct_scvi(Xs, genes):
     import torch
     use_cuda = True
@@ -150,66 +162,66 @@ if __name__ == '__main__':
         axis=None
     )
 
-    cds = [
-        PanDAG(
-            dag_method=DAG_METHOD,
-            reduce_dim=all_dimreds[i],
-            verbose=True,
-        ).fit(all_dimreds[i])
-        for i in range(len(all_dimreds))
-    ]
+    #cds = [
+    #    PanDAG(
+    #        dag_method=DAG_METHOD,
+    #        reduce_dim=all_dimreds[i],
+    #        verbose=True,
+    #    ).fit(all_dimreds[i])
+    #    for i in range(len(all_dimreds))
+    #]
+    #
+    #ct = PanCorrelation(
+    #    n_components=25,
+    #    min_modules=3,
+    #    min_leaves=500,
+    #    dag_method=DAG_METHOD,
+    #    corr_method=CORR_METHOD,
+    #    corr_cutoff=CORR_CUTOFF,
+    #    reassemble_method=REASSEMBLE_METHOD,
+    #    reassemble_K=REASSEMBLE_K,
+    #    random_projection=RANDOM_PROJ,
+    #    dictionary_learning=True,
+    #    n_jobs=1,
+    #    verbose=2,
+    #)
+    #
+    #studies = [ 'mouse_develop' ]
+    #curr_idx = 0
+    #for i, cd in enumerate(cds):
+    #    for node in cd.nodes:
+    #        node.sample_idx = np.array(node.sample_idx) + curr_idx
+    #        ct.nodes.append(node)
+    #        if node.n_leaves >= ct.min_leaves:
+    #            studies.append(
+    #                all_namespaces[i]
+    #                if not all_namespaces[i].startswith('mca')
+    #                else 'mca_han'
+    #            )
+    #            curr_idx += all_dimreds[i].shape[0]
+    #            tprint(all_dimreds[i].shape[0])
+    #
+    #with open('{}/genes.txt'.format(dirname), 'w') as of:
+    #    [ of.write('{}\n'.format(gene)) for gene in genes ]
+    #
+    #with open('{}/cluster_studies.txt'.format(dirname), 'w') as of:
+    #    [ of.write('{}\n'.format(study)) for study in studies ]
+    #
+    #ct.sample_idx = list(range(X.shape[0]))
+    #ct.n_leaves = X.shape[0]
+    #ct.fill_correlations(X)
+    #
+    #for node_idx, node in enumerate(ct.nodes):
+    #    if node.n_leaves < ct.min_leaves:
+    #        continue
+    #    avg_age = np.mean(ages[node.sample_idx])
+    #    save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'.format(
+    #        dirname, node_idx, avg_age, node.n_leaves
+    #    ), node.correlations)
 
-    ct = PanCorrelation(
-        n_components=25,
-        min_modules=3,
-        min_leaves=500,
-        dag_method=DAG_METHOD,
-        corr_method=CORR_METHOD,
-        corr_cutoff=CORR_CUTOFF,
-        reassemble_method=REASSEMBLE_METHOD,
-        reassemble_K=REASSEMBLE_K,
-        random_projection=RANDOM_PROJ,
-        dictionary_learning=True,
-        n_jobs=1,
-        verbose=2,
-    )
+    #exit()
 
-    studies = [ 'mouse_develop' ]
-    curr_idx = 0
-    for i, cd in enumerate(cds):
-        for node in cd.nodes:
-            node.sample_idx = np.array(node.sample_idx) + curr_idx
-            ct.nodes.append(node)
-            if node.n_leaves >= ct.min_leaves:
-                studies.append(
-                    all_namespaces[i]
-                    if not all_namespaces[i].startswith('mca')
-                    else 'mca_han'
-                )
-        curr_idx += all_dimreds[i].shape[0]
-        tprint(all_dimreds[i].shape[0])
-
-    with open('{}/genes.txt'.format(dirname), 'w') as of:
-        [ of.write('{}\n'.format(gene)) for gene in genes ]
-
-    with open('{}/cluster_studies.txt'.format(dirname), 'w') as of:
-        [ of.write('{}\n'.format(study)) for study in studies ]
-
-    ct.sample_idx = list(range(X.shape[0]))
-    ct.n_leaves = X.shape[0]
-    ct.fill_correlations(X)
-
-    for node_idx, node in enumerate(ct.nodes):
-        if node.n_leaves < ct.min_leaves:
-            continue
-        avg_age = np.mean(ages[node.sample_idx])
-        save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'.format(
-            dirname, node_idx, avg_age, node.n_leaves
-        ), node.correlations)
-
-    exit()
-
-    expr_type = 'uncorrected'
+    expr_type = 'seurat'
 
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)
@@ -217,6 +229,8 @@ if __name__ == '__main__':
         X = correct_scvi(Xs, genes)
         X[np.isnan(X)] = 0
         X[np.isinf(X)] = 0
+    if expr_type == 'seurat':
+        X = correct_seurat(Xs, genes)
 
     if expr_type == 'uncorrected':
         # Geometric mean for nonnegative count data.
