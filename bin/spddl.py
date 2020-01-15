@@ -11,7 +11,7 @@ def obj_worker(Xi, Ci, D, beta):
     tonorm = Xi.toarray() - D.dot(np.multiply(Ci[:, None], D.T))
     reg = beta * Ci.sum()
     return (0.5 * (np.linalg.norm(tonorm) ** 2)) + reg
-        
+
 class CovarianceDictionary(object):
 
     """
@@ -25,7 +25,7 @@ class CovarianceDictionary(object):
     method : str in {'frob-sc'}, optional, default = 'frob-sc'
         Specifies which optimization algorithm to use. Frobenius norm sparse
         coding from Sra, & Cherian (2011) supported.
- 
+
     init : str in {'eigen', 'rand'}, optional, default = 'eigen'
         Specifies how to initialize the dictionary and weights. 'eigen'
         initialized the data using the eigendecomposition of the average
@@ -157,7 +157,7 @@ class CovarianceDictionary(object):
         results = Parallel(n_jobs=self.n_jobs, backend='multiprocessing')(
             delayed(obj_worker)(X[i], C[i], D, self.nls_beta)
             for i in range(len(X))
-        )        
+        )
         return sum(results)
 
     def _nls_subproblem(self, X, D, C_init=None, minibatch=None):
@@ -206,7 +206,7 @@ class CovarianceDictionary(object):
     def _frob_sc(self, X, C_init=None, D_init=None):
         n_samples = len(X)
         n_features = X[0].shape[0]
-        
+
         if C_init is None or D_init is None:
             C, D = self._initialize(X)
         else:
@@ -242,13 +242,13 @@ class CovarianceDictionary(object):
             )
             if self.verbose > 2:
                 tprint(self._obj(X, C, D))
-            
+
             # Optimize D with SGD.
             D, velocity = self._gradient_subproblem(
                 X, C, D, velocity, minibatch=minibatch
             )
             if self.verbose > 2:
-                tprint(self._obj(X, C, D))            
+                tprint(self._obj(X, C, D))
 
             curr_cost = self._obj(X, C, D)
             delta = abs(curr_cost - cost) / cost
@@ -290,8 +290,6 @@ if __name__ == '__main__':
     n_samples = 10
     n_features = 100
     n_components = 10
-
-    np.random.seed(69)
 
     X = []
     Xi_prev = None

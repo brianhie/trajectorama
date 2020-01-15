@@ -12,7 +12,7 @@ from dict_learning import DictionaryLearning
 from draw_graph import draw_graph
 from utils import *
 
-NAMESPACE = 'mouse_develop_spearman_louvain'
+NAMESPACE = 'microglia_spearman_louvain_sparse0.3'
 
 N_COMPONENTS = 20
 INIT = 'eigen'
@@ -22,13 +22,12 @@ VIZ_KNN = True
 VIZ_SPARSITY = True
 VIZ_STUDY = True
 VIZ_DICT_LEARN = True
-VIZ_CORR_PSEUDOTIME = True
 
 def srp_worker(X, srp, triu_idx):
     return srp.transform(np.abs(X.toarray())[triu_idx].reshape(1, -1))[0]
 
 def savefig(fname, ax):
-    ratio = 2.
+    ratio = 1.
     xmin, xmax = ax.get_xlim()
     ymin, ymax = ax.get_ylim()
     ax.set_aspect(abs((xmax - xmin) / (ymax - ymin)) * ratio)
@@ -69,10 +68,10 @@ if __name__ == '__main__':
 
         X = ss.load_npz(dirname + '/' + fname)
 
-        sparse_cutoff = 10000
-        if len(X.data) > sparse_cutoff:
-            cutoff = sorted(-abs(X.data))[sparse_cutoff - 1]
-            X[abs(X) < cutoff] = 0
+        #sparse_cutoff = 10000
+        #if len(X.data) > sparse_cutoff:
+        #    cutoff = sorted(-abs(X.data))[sparse_cutoff - 1]
+        #    X[abs(X) < cutoff] = 0
 
         Xs.append(X)
 
@@ -98,15 +97,6 @@ if __name__ == '__main__':
         for X in Xs
     ]
 
-    #srp = SparseRandomProjection(
-    #    eps=0.1, random_state=69
-    #).fit(ss.csr_matrix((len(Xs), n_correlations)))
-    #
-    #Xs_dimred = Parallel(n_jobs=20, backend='multiprocessing') (
-    #    delayed(srp_worker)(X, srp, triu_idx)
-    #    for X in Xs
-    #)
-
     # Change from lexicographic ordering to numeric.
     ordered = [ node_idxs.index(i) for i in sorted(node_idxs) ]
     Xs = [ Xs[o] for o in ordered  ]
@@ -127,63 +117,10 @@ if __name__ == '__main__':
     print(X_dimred.shape)
 
     adata = AnnData(X=X_dimred)
-    adata.obs['age'] = ages
-    sc.pp.neighbors(adata, n_neighbors=40, use_rep='X')
+    adata.obs['age'] = [ age if age >= 0 else 19 for age in ages ]
+    sc.pp.neighbors(adata, n_neighbors=20, use_rep='X')
 
     draw_graph(adata, layout='fa')
-    #argsort = np.argsort(adata.obsm['X_draw_graph_fa'][:, 0])[:6]
-    #mean_pos = np.mean(adata.obsm['X_draw_graph_fa'][:, 0])
-    #adata.obsm['X_draw_graph_fa'][argsort, 0] = mean_pos
-    #argsort = np.argsort(-adata.obsm['X_draw_graph_fa'][:, 1])[:20]
-    #adata.obsm['X_draw_graph_fa'][argsort, 0] = mean_pos
-    #adata.obsm['X_draw_graph_fa'][argsort, 1] *= 0.7
-
-    print('pseudotime')
-    sc.tl.diffmap(adata)
-    adata.uns['iroot'] = np.flatnonzero(adata.obs['age'] < 9.6)[0]
-    sc.tl.dpt(adata)
-    adata.obs['dpt_pseudotime'][adata.obs['dpt_pseudotime'] > 0.19] = 0.19
-    #adata.obs['dpt_pseudotime'] /= 0.20
-    from scipy.stats import pearsonr, spearmanr
-    print(pearsonr(adata.obs['dpt_pseudotime'], adata.obs['age']))
-    print(spearmanr(adata.obs['dpt_pseudotime'], adata.obs['age']))
-
-    plt.figure()
-    sns.lmplot('age', 'dpt_pseudotime', adata.obs, ci=99)
-    plt.savefig('pseudo_age.svg')
-
-    ax = sc.pl.draw_graph(
-        adata, color='dpt_pseudotime', edges=True, edges_color='#CCCCCC',
-        show=False,
-    )
-    savefig('figures/draw_graph_fa_{}_cluster_trajectory_dpt.png'
-            .format(NAMESPACE), ax)
-
-    if VIZ_CORR_PSEUDOTIME:
-        tprint('Diffusion pseudotime analysis...')
-
-        pair2corr = {}
-        assert(len(gene_pairs) == X_dimred.shape[1])
-        for pair_idx, pair in enumerate(gene_pairs):
-            pair2corr[pair] = pearsonr(
-                X_dimred[:, pair_idx], adata.obs['dpt_pseudotime']
-            )[0]
-        for pair, corr in sorted(
-                pair2corr.items(), key=lambda kv: -abs(kv[1])
-        ):
-            print('{}\t{}\t{}'.format(pair[0], pair[1], corr))
-
-            if pair == ('FOS', 'FOS') or pair == ('EOMES', 'EOMES') or \
-               pair == ('BCAN', 'BCAN') or pair == ('CXCR4', 'CXCR4'):
-                pair_name = '_'.join(pair)
-                pair_idx = gene_pairs.index(pair)
-                adata.obs[pair_name] = X_dimred[:, pair_idx]
-                ax = sc.pl.draw_graph(
-                    adata, color=pair_name, edges=True, edges_color='#CCCCCC',
-                    show=False,
-                )
-                savefig('figures/draw_graph_fa_{}_pair_{}.png'
-                        .format(NAMESPACE, pair_name), ax)
 
     if VIZ_SPARSITY:
         tprint('Plot sparsity...')

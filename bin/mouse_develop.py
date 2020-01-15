@@ -15,8 +15,7 @@ from pan_dag import PanDAG
 from process import merge_datasets
 from utils import *
 
-
-CORR_METHOD = 'pearson'
+CORR_METHOD = 'spearman'
 DAG_METHOD = 'louvain'
 DIMRED = 100
 DR_METHOD = 'svd'
@@ -32,38 +31,39 @@ NAMESPACE = 'mouse_develop_{}_{}'.format(CORR_METHOD, DAG_METHOD)
 if RANDOM_PROJ:
     NAMESPACE += '_randproj'
 
-all_datasets = []
-all_namespaces = []
-all_dimreds = []
+def import_data():
+    all_datasets, all_namespaces, all_dimreds = [], [], []
 
-from dataset_mouse_gastr_late_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_mca_fetal_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_cortical import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_mca_neonatal_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_zeisel_adolescent_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_saunders_adult_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_mca_adult_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
+    from dataset_mouse_gastr_late_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_mca_fetal_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_cortical import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_mca_neonatal_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_zeisel_adolescent_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_saunders_adult_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_mca_adult_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+
+    return all_datasets, all_namespaces, all_dimreds
 
 def correct_scanorama(Xs, genes):
     from scanorama import correct
@@ -127,6 +127,8 @@ if __name__ == '__main__':
     dirname = 'target/sparse_correlations/{}'.format(NAMESPACE)
     mkdir_p(dirname)
 
+    all_datasets, all_namespaces, all_dimreds = import_data()
+
     hv_genes = None
     for i, dataset in enumerate(all_datasets):
         genes_hvg, _ = hvg([dataset.X], dataset.var['gene_symbols'], 'dispersion')
@@ -162,64 +164,64 @@ if __name__ == '__main__':
         axis=None
     )
 
-    #cds = [
-    #    PanDAG(
-    #        dag_method=DAG_METHOD,
-    #        reduce_dim=all_dimreds[i],
-    #        verbose=True,
-    #    ).fit(all_dimreds[i])
-    #    for i in range(len(all_dimreds))
-    #]
-    #
-    #ct = PanCorrelation(
-    #    n_components=25,
-    #    min_modules=3,
-    #    min_leaves=500,
-    #    dag_method=DAG_METHOD,
-    #    corr_method=CORR_METHOD,
-    #    corr_cutoff=CORR_CUTOFF,
-    #    reassemble_method=REASSEMBLE_METHOD,
-    #    reassemble_K=REASSEMBLE_K,
-    #    random_projection=RANDOM_PROJ,
-    #    dictionary_learning=True,
-    #    n_jobs=1,
-    #    verbose=2,
-    #)
-    #
-    #studies = [ 'mouse_develop' ]
-    #curr_idx = 0
-    #for i, cd in enumerate(cds):
-    #    for node in cd.nodes:
-    #        node.sample_idx = np.array(node.sample_idx) + curr_idx
-    #        ct.nodes.append(node)
-    #        if node.n_leaves >= ct.min_leaves:
-    #            studies.append(
-    #                all_namespaces[i]
-    #                if not all_namespaces[i].startswith('mca')
-    #                else 'mca_han'
-    #            )
-    #            curr_idx += all_dimreds[i].shape[0]
-    #            tprint(all_dimreds[i].shape[0])
-    #
-    #with open('{}/genes.txt'.format(dirname), 'w') as of:
-    #    [ of.write('{}\n'.format(gene)) for gene in genes ]
-    #
-    #with open('{}/cluster_studies.txt'.format(dirname), 'w') as of:
-    #    [ of.write('{}\n'.format(study)) for study in studies ]
-    #
-    #ct.sample_idx = list(range(X.shape[0]))
-    #ct.n_leaves = X.shape[0]
-    #ct.fill_correlations(X)
-    #
-    #for node_idx, node in enumerate(ct.nodes):
-    #    if node.n_leaves < ct.min_leaves:
-    #        continue
-    #    avg_age = np.mean(ages[node.sample_idx])
-    #    save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'.format(
-    #        dirname, node_idx, avg_age, node.n_leaves
-    #    ), node.correlations)
+    cds = [
+        PanDAG(
+            dag_method=DAG_METHOD,
+            reduce_dim=all_dimreds[i],
+            verbose=True,
+        ).fit(all_dimreds[i])
+        for i in range(len(all_dimreds))
+    ]
 
-    #exit()
+    ct = PanCorrelation(
+        n_components=25,
+        min_modules=3,
+        min_leaves=500,
+        dag_method=DAG_METHOD,
+        corr_method=CORR_METHOD,
+        corr_cutoff=CORR_CUTOFF,
+        reassemble_method=REASSEMBLE_METHOD,
+        reassemble_K=REASSEMBLE_K,
+        random_projection=RANDOM_PROJ,
+        dictionary_learning=True,
+        n_jobs=1,
+        verbose=2,
+    )
+
+    studies = [ 'mouse_develop' ]
+    curr_idx = 0
+    for i, cd in enumerate(cds):
+        for node in cd.nodes:
+            node.sample_idx = np.array(node.sample_idx) + curr_idx
+            ct.nodes.append(node)
+            if node.n_leaves >= ct.min_leaves:
+                studies.append(
+                    all_namespaces[i]
+                    if not all_namespaces[i].startswith('mca')
+                    else 'mca_han'
+                )
+        curr_idx += all_dimreds[i].shape[0]
+        tprint(all_dimreds[i].shape[0])
+
+    with open('{}/genes.txt'.format(dirname), 'w') as of:
+        [ of.write('{}\n'.format(gene)) for gene in genes ]
+
+    with open('{}/cluster_studies.txt'.format(dirname), 'w') as of:
+        [ of.write('{}\n'.format(study)) for study in studies ]
+
+    ct.sample_idx = list(range(X.shape[0]))
+    ct.n_leaves = X.shape[0]
+    ct.fill_correlations(X)
+
+    for node_idx, node in enumerate(ct.nodes):
+        if node.n_leaves < ct.min_leaves:
+            continue
+        avg_age = np.mean(ages[node.sample_idx])
+        save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'.format(
+            dirname, node_idx, avg_age, node.n_leaves
+        ), node.correlations)
+
+    exit()
 
     expr_type = 'seurat'
 

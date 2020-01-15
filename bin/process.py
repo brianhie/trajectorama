@@ -293,12 +293,12 @@ def merge_datasets(datasets, genes, ds_names=None, verbose=True,
             if verbose:
                 print('Processing dataset {}'.format(i))
             X_new = np.zeros((datasets[i].shape[0], len(union_genes)))
-            X_old = csc_matrix(datasets[i])
+            X_old = datasets[i].todense()
             gene_to_idx = { g: idx for idx, gene in enumerate(genes[i])
                             for g in gene.split(';') }
             for j, gene in enumerate(union_genes):
                 if gene in gene_to_idx:
-                    X_new[:, j] = X_old[:, gene_to_idx[gene]].toarray().flatten()
+                    X_new[:, j] = X_old[:, gene_to_idx[gene]].flatten()
             datasets[i] = csr_matrix(X_new)
         ret_genes = np.array(union_genes)
     else:

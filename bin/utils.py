@@ -12,6 +12,11 @@ from scipy.sparse import csr_matrix, vstack
 from sklearn.preprocessing import LabelEncoder, normalize
 import sys
 import os
+import random
+
+np.random.seed(0)
+random.seed(0)
+os.environ['PYTHONHASHSEED'] = '0'
 
 COLORS = [
     '#377eb8', '#ff7f00', '#4daf4a',

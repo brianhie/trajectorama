@@ -35,7 +35,8 @@ data_names = [
 def keep_valid(datasets):
     barcode_sub_type = {}
     with loompy.connect('data/mouse_brain/zeisel/l6_r1.loom') as ds:
-        for barcode, sub_type in zip(ds.ca['CellID'], ds.ca['Taxonomy_group']):
+        for barcode, sub_type in zip(ds.ca['CellID'], ds.ca['ClusterName']):
+        #for barcode, sub_type in zip(ds.ca['CellID'], ds.ca['Taxonomy_group']):
             barcode_sub_type[barcode] = sub_type
 
     valid_idx = []
@@ -78,7 +79,7 @@ def keep_valid(datasets):
                             continue
                     min_age = 19.
                     max_age = 60.
-                    offset = (age - min_age) / (max_age - min_age)
+                    offset = (age - min_age) / (max_age - min_age) * 3
                     ages.append(19 + offset)
 
     return valid_idx, np.array(cell_types), np.array(ages), np.array(sub_types)
