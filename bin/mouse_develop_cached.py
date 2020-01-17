@@ -14,13 +14,13 @@ from utils import *
 
 NAMESPACE = 'mouse_develop_spearman_louvain'
 
-N_COMPONENTS = 20
+N_COMPONENTS = 15
 INIT = 'eigen'
 
-VIZ_AGE = True
-VIZ_KNN = True
-VIZ_SPARSITY = True
-VIZ_STUDY = True
+VIZ_AGE = False
+VIZ_KNN = False
+VIZ_SPARSITY = False
+VIZ_STUDY = False
 VIZ_DICT_LEARN = True
 VIZ_CORR_PSEUDOTIME = True
 
@@ -68,12 +68,6 @@ if __name__ == '__main__':
             continue
 
         X = ss.load_npz(dirname + '/' + fname)
-
-        sparse_cutoff = 10000
-        if len(X.data) > sparse_cutoff:
-            cutoff = sorted(-abs(X.data))[sparse_cutoff - 1]
-            X[abs(X) < cutoff] = 0
-
         Xs.append(X)
 
         nonzero_idx |= set([ (r, c) for r, c in zip(*X.nonzero()) ])
@@ -154,7 +148,7 @@ if __name__ == '__main__':
 
     ax = sc.pl.draw_graph(
         adata, color='dpt_pseudotime', edges=True, edges_color='#CCCCCC',
-        show=False,
+        color_map='inferno', show=False,
     )
     savefig('figures/draw_graph_fa_{}_cluster_trajectory_dpt.png'
             .format(NAMESPACE), ax)
@@ -173,14 +167,14 @@ if __name__ == '__main__':
         ):
             print('{}\t{}\t{}'.format(pair[0], pair[1], corr))
 
-            if pair == ('FOS', 'FOS') or pair == ('EOMES', 'EOMES') or \
-               pair == ('BCAN', 'BCAN') or pair == ('CXCR4', 'CXCR4'):
+            if pair == ('FOS', 'FOS') or pair == ('PTGDS', 'PTGDS') or \
+               pair == ('LOXL2', 'LOXL2') or pair == ('LHX1', 'LHX1'):
                 pair_name = '_'.join(pair)
                 pair_idx = gene_pairs.index(pair)
                 adata.obs[pair_name] = X_dimred[:, pair_idx]
                 ax = sc.pl.draw_graph(
                     adata, color=pair_name, edges=True, edges_color='#CCCCCC',
-                    show=False,
+                    show=False, color_map='coolwarm',
                 )
                 savefig('figures/draw_graph_fa_{}_pair_{}.png'
                         .format(NAMESPACE, pair_name), ax)
@@ -247,7 +241,7 @@ if __name__ == '__main__':
             adata.obs[comp_name] = weights[:, comp]
             ax = sc.pl.draw_graph(
                 adata, color=comp_name, edges=True, edges_color='#CCCCCC',
-                show=False,
+                show=False, color_map='plasma',
             )
             savefig('figures/draw_graph_fa_{}_cluster_trajectory_dict{}.png'
                     .format(NAMESPACE, comp), ax)

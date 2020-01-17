@@ -16,7 +16,7 @@ from process import merge_datasets
 from utils import *
 
 
-CORR_METHOD = 'pearson'
+CORR_METHOD = 'spearman'
 DAG_METHOD = 'louvain'
 DIMRED = 100
 DR_METHOD = 'svd'
@@ -41,6 +41,10 @@ all_datasets += datasets
 all_namespaces += namespaces
 all_dimreds.append(X_dimred)
 from dataset_cordblood_ica import datasets, namespaces, X_dimred
+all_datasets += datasets
+all_namespaces += namespaces
+all_dimreds.append(X_dimred)
+from dataset_zeng_develop_thymus import datasets, namespaces, X_dimred
 all_datasets += datasets
 all_namespaces += namespaces
 all_dimreds.append(X_dimred)
@@ -78,10 +82,12 @@ if __name__ == '__main__':
 
     # Keep only those highly variable genes.
 
-    Xs, genes = merge_datasets([ dataset.X for dataset in all_datasets ],
-                               [ dataset.var['gene_symbols'] for dataset in all_datasets ],
-                               keep_genes=hv_genes, ds_names=all_namespaces,
-                               verbose=True)
+    Xs, genes = merge_datasets(
+        [ dataset.X for dataset in all_datasets ],
+        [ dataset.var['gene_symbols'] for dataset in all_datasets ],
+        keep_genes=hv_genes, ds_names=all_namespaces,
+        verbose=True
+    )
 
     [ print(X.shape[0]) for X in Xs ]
 
@@ -165,19 +171,22 @@ if __name__ == '__main__':
     exit()
 
     from mouse_develop import correct_scanorama, correct_scvi
-    #X = correct_scanorama(Xs, genes)
-    X = correct_scvi(Xs, genes)
+
+    expr_type = 'seurat'
+
+    if expr_type == 'scanorama':
+        X = correct_scanorama(Xs, genes)
+    if expr_type == 'scvi':
+        X = correct_scvi(Xs, genes)
+        X[np.isnan(X)] = 0
+        X[np.isinf(X)] = 0
 
     C = np.vstack([
-        #(np.exp(
-        #    ((1. / node.n_leaves) * np.log1p(X[node.sample_idx]).sum(0)) - 1
-        #) + 1) / (
-        #    (1. / node.n_leaves) * X[node.sample_idx].sum(0) + 1
-        #)
         X[node.sample_idx].mean(0)
         for node in ct.nodes
         if node.n_leaves >= ct.min_leaves
     ])
+
     adata = AnnData(X=C)
     adata.obs['study'] = studies
 

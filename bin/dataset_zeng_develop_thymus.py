@@ -35,6 +35,10 @@ cell_types = np.array(
     .read().rstrip().split('\n')
 )
 
+hema_idx = cell_types == 'Hema'
+X = X[hema_idx]
+cell_types = cell_types[hema_idx]
+
 if not os.path.isfile('data/dimred/{}_{}.txt'
                       .format(DR_METHOD, NAMESPACE)):
     mkdir_p('data/dimred')

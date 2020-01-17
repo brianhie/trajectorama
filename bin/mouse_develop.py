@@ -4,7 +4,7 @@ import numpy as np
 import os
 from scanorama import process_data, plt, reduce_dimensionality, visualize
 import scanpy as sc
-from scipy.sparse import vstack, save_npz
+from scipy.sparse import vstack, save_npz, csr_matrix
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder, normalize
 import sys
@@ -75,7 +75,7 @@ def correct_scanorama(Xs, genes):
 
 def correct_seurat(Xs, genes):
     for X_idx, X in enumerate(Xs):
-        adata = AnnData(X.todense())
+        adata = AnnData(X)
         adata.raw = adata
         adata.var_names = genes
         adata.obs_names = [ 'cell_{}_{}'.format(X_idx, i)
@@ -110,9 +110,9 @@ def correct_scvi(Xs, genes):
     )
     trainer = UnsupervisedTrainer(vae, all_dataset, train_size=0.99999)
     n_epochs = 100
-    #trainer.train(n_epochs=n_epochs)
-    #torch.save(trainer.model.state_dict(),
-    #           'data/harmonization.vae.pkl')
+    trainer.train(n_epochs=n_epochs)
+    torch.save(trainer.model.state_dict(),
+               'data/harmonization.vae.pkl')
     trainer.model.load_state_dict(torch.load('data/harmonization.vae.pkl'))
     trainer.model.eval()
 
@@ -219,7 +219,7 @@ if __name__ == '__main__':
         avg_age = np.mean(ages[node.sample_idx])
         save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'.format(
             dirname, node_idx, avg_age, node.n_leaves
-        ), node.correlations)
+        ), csr_matrix(node.correlations))
 
     exit()
 
@@ -234,24 +234,11 @@ if __name__ == '__main__':
     if expr_type == 'seurat':
         X = correct_seurat(Xs, genes)
 
-    if expr_type == 'uncorrected':
-        # Geometric mean for nonnegative count data.
-        C = np.vstack([
-            (np.exp(
-                ((1. / node.n_leaves) * np.log1p(X[node.sample_idx]).sum(0)) - 1
-            ) + 1) / (
-                (1. / node.n_leaves) * X[node.sample_idx].sum(0) + 1
-            )
-            for node in ct.nodes
-            if node.n_leaves >= ct.min_leaves
-        ])
-    else:
-        # Regular mean for continuous data.
-        C = np.vstack([
-            X[node.sample_idx].mean(0)
-            for node in ct.nodes
-            if node.n_leaves >= ct.min_leaves
-        ])
+    C = np.vstack([
+        X[node.sample_idx].mean(0)
+        for node in ct.nodes
+        if node.n_leaves >= ct.min_leaves
+    ])
 
     np.save('data/expression_cluster_{}.npy'.format(expr_type), C)
 

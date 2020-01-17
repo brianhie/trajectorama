@@ -17,7 +17,6 @@ DR_METHOD = 'svd'
 
 data_names = [
     'data/microglia/masuda2019/mouse/GSE120744_counts',
-    'data/microglia/masuda2019/mouse/GSE120745_geosubmission_counts',
 ]
 
 def load_meta(datasets):
@@ -32,7 +31,6 @@ def load_meta(datasets):
     id_to_meta = {}
     soft_fnames = [
         'data/microglia/masuda2019/mouse/GSE120744_family.soft.gz',
-        'data/microglia/masuda2019/mouse/GSE120745_family.soft.gz',
     ]
     for fname in soft_fnames:
         gsms = GEOparse.get_GEO(filepath=fname, silent=True).gsms

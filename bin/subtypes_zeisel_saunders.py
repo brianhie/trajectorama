@@ -27,7 +27,8 @@ def import_data():
 
     return all_datasets, all_namespaces, all_dimreds
 
-def sub_coexpr(X, sub_types, return_expr=False):
+def sub_coexpr(X, sub_types, return_expr=False, min_samples=500,
+               corr_cutoff=CORR_CUTOFF, corr_method=CORR_METHOD):
     n_cells, n_genes = X.shape
     sub_types = np.array(sub_types)
 
@@ -41,15 +42,15 @@ def sub_coexpr(X, sub_types, return_expr=False):
     for sub_type in sub_types_uniq:
         X_sub = X[sub_types == sub_type].todense()
 
-        if X_sub.shape[0] < 500 or sub_type.endswith('_NA'):
+        if X_sub.shape[0] < min_samples or sub_type.endswith('_NA'):
             continue
 
-        if CORR_METHOD == 'pearson':
+        if corr_method == 'pearson':
             corr = pearson_multi(X_sub)
         else:
             corr = spearman_multi(X_sub)
         corr[np.isnan(corr)] = 0.
-        corr[np.abs(corr) < CORR_CUTOFF] = 0.
+        corr[np.abs(corr) < corr_cutoff] = 0.
 
         coexpr.append(corr[triu_idx])
         sub_types_used.append(sub_type + '_' + str(X_sub.shape[0]))
@@ -65,13 +66,9 @@ def sub_coexpr(X, sub_types, return_expr=False):
 
     return np.array(coexpr), sub_types_used
 
-def plot_clustermap(df, dist, suffix):
-    row_linkage = hierarchy.linkage(
-        distance.pdist(-dist), method='average'
-    )
-    col_linkage = hierarchy.linkage(
-        distance.pdist(-dist.T), method='average'
-    )
+def plot_clustermap(df, dist, suffix, prefix='subtypes_zeisel_saunders'):
+    row_linkage = hierarchy.linkage(dist, method='average')
+    col_linkage = hierarchy.linkage(dist.T, method='average')
 
     plt.figure(figsize=(10, 10))
     sns.clustermap(
@@ -81,10 +78,10 @@ def plot_clustermap(df, dist, suffix):
     plt.gcf().set_size_inches(40, 40)
     plt.tight_layout()
     plt.savefig(
-        'figures/subtypes_zeisel_saunders_heatmap_{}.png'.format(suffix), dpi=300
+        'figures/{}_heatmap_{}.png'.format(prefix, suffix), dpi=300
     )
     plt.savefig(
-        'figures/subtypes_zeisel_saunders_heatmap_{}.svg'.format(suffix)
+        'figures/{}_heatmap_{}.svg'.format(prefix, suffix)
     )
     plt.close()
 
@@ -93,11 +90,16 @@ def plot_clustermap(df, dist, suffix):
 def interpret_clustermap(coexpr, genes, sub_types, linkage,
                          n_clusters=5, n_report=100):
     clusters = hierarchy.fcluster(linkage, n_clusters, 'maxclust')
+    interpret_clusters(coexpr, clusters, genes, sub_types, n_report)
+
+def interpret_clusters(coexpr, clusters, genes, sub_types, n_report=100):
+    clusters = np.array(clusters)
     sub_types = np.array(sub_types)
 
+    uniq_clusters = sorted(set(clusters))
     cluster_coexprs = []
-    for i in range(n_clusters):
-        cluster_idx = clusters == i + 1
+    for i, cluster in enumerate(uniq_clusters):
+        cluster_idx = clusters == cluster
         print('Cluster {}\n'.format(i) +
               '\n'.join(sub_types[cluster_idx]) +
               '\n')

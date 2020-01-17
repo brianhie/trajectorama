@@ -1,3 +1,4 @@
+import glob
 import itertools
 import networkx as nx
 from networkx.drawing.nx_pylab import draw_networkx
@@ -35,10 +36,10 @@ def visualize_top_betweenness(genes, network, fname):
 if __name__ == '__main__':
 
     dirname = 'target/sparse_correlations/{}'.format(NAMESPACE)
-    
+
     with open('{}/genes.txt'.format(dirname)) as f:
         genes = f.read().rstrip().split('\n')
-        
+
     gene2idx = { gene: idx for idx, gene in enumerate(genes) }
 
     n_features = len(genes)
@@ -46,7 +47,7 @@ if __name__ == '__main__':
     with open('{}/gene_pairs.txt'.format(dirname)) as f:
         gene_pairs = [ tuple(pair.split('_'))
                        for pair in f.read().rstrip().split('\n') ]
-    
+
     n_correlations = len(gene_pairs)
 
     components = np.zeros((N_COMPONENTS, n_correlations))
@@ -54,13 +55,13 @@ if __name__ == '__main__':
     with open('{}/gene_indices.txt'.format(dirname), 'w') as of:
         [ of.write('{}\t{}\n'.format(idx + 1, gene))
           for idx, gene in enumerate(genes) ]
-        
+
     adata = AnnData(X=np.ones((n_features, 1)))
     adata.obs['names'] = genes
 
-    of_interest = set([ 8, 3, 20, 14, 19, 17 ])
+    of_interest = set([ 1, 2, 4, 13 ])
     pair2comp = {}
-    
+
     networks = { comp: nx.Graph()
                  for comp in range(N_COMPONENTS) if comp in of_interest }
     [ networks[comp].add_nodes_from(genes) for comp in networks ]
@@ -68,7 +69,7 @@ if __name__ == '__main__':
     for comp in range(N_COMPONENTS):
         if comp not in of_interest:
             continue
-        
+
         components[comp, :] = np.loadtxt(
             '{}/dictw{}.txt'.format(dirname, comp)
         )
@@ -99,13 +100,9 @@ if __name__ == '__main__':
                     )
 
     from hematopoiesis_dictionary import network_overlap
-    baseline_fname = (
-        dirname + '/node_0_at_14.656471893132178_has_932301_leaves.npz'
-    )
+    baseline_fname = glob.glob(dirname + '/node_0_*.npz')[0]
     network_overlap(networks, genes, baseline_fname)
-                    
-    exit()
-    
+
     for comp in networks:
         print('\nRW Betweeness for component {}'.format(comp))
         node2central = nx.betweenness_centrality(networks[comp])
@@ -137,4 +134,3 @@ if __name__ == '__main__':
         with open('{}/uniq_link_genes_{}.txt'
                   .format(dirname, comp), 'w') as of:
             of.write('\n'.join(sorted(uniq_links[comp])))
-

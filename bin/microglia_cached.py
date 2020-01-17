@@ -12,7 +12,7 @@ from dict_learning import DictionaryLearning
 from draw_graph import draw_graph
 from utils import *
 
-NAMESPACE = 'microglia_spearman_louvain_sparse0.3'
+NAMESPACE = 'microglia_spearman_louvain'
 
 N_COMPONENTS = 20
 INIT = 'eigen'
@@ -21,7 +21,7 @@ VIZ_AGE = True
 VIZ_KNN = True
 VIZ_SPARSITY = True
 VIZ_STUDY = True
-VIZ_DICT_LEARN = True
+VIZ_DICT_LEARN = False
 
 def srp_worker(X, srp, triu_idx):
     return srp.transform(np.abs(X.toarray())[triu_idx].reshape(1, -1))[0]

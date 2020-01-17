@@ -1,12 +1,15 @@
 from anndata import AnnData
 from matplotlib import cm
 import numpy as np
+import pandas as pd
 import os
 from scanorama import process_data, plt, reduce_dimensionality, visualize
 import scanpy as sc
+from scipy.stats import spearmanr
 from scipy.sparse import vstack, save_npz
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder, normalize
+from sklearn.metrics import pairwise_distances
 import sys
 
 from draw_graph import draw_graph
@@ -80,10 +83,36 @@ if __name__ == '__main__':
         verbose=True
     )
 
+    cell_types = np.concatenate(
+        [ dataset.obs['cell_types'] for dataset in all_datasets ],
+        axis=None
+    )
+
+    X = vstack(X_studies)
+    X = X.log1p()
+
+    from subtypes_zeisel_saunders import sub_coexpr
+    from subtypes_zeisel_saunders import plot_clustermap, interpret_clustermap
+    coexpr, types, expr = sub_coexpr(
+        X, cell_types, return_expr=True, min_samples=0,
+        corr_cutoff=0., corr_method='spearman'
+    )
+    dist = pairwise_distances(coexpr)
+    dist[np.isnan(dist)] = 0.
+    df = pd.DataFrame(-dist, index=types, columns=types)
+    linkage, _ = plot_clustermap(df, dist, 'coexpr', 'microglia')
+
+    print(types)
+
+    interpret_clustermap(coexpr, genes, types, linkage, n_clusters=2)
+
     Xs, cds, cd_names, ages = [], [], [], []
     for i in range(len(all_dimreds)):
         cell_types_i = np.array(all_datasets[i].obs['cell_types'])
         for cell_type in sorted(set(cell_types_i)):
+            if 'human' in cell_type or '_ms_' in cell_type or \
+               '_fxn_' in cell_type or 'myelin' in cell_type:
+                continue
             type_idx = cell_types_i == cell_type
             Xs.append(X_studies[i][type_idx])
             X_dimred = all_dimreds[i][type_idx]
@@ -101,8 +130,6 @@ if __name__ == '__main__':
     [ tprint(X.shape[0]) for X in Xs ]
 
     ct = PanCorrelation(
-        n_components=25,
-        min_modules=3,
         min_leaves=500,
         dag_method=DAG_METHOD,
         corr_method=CORR_METHOD,
