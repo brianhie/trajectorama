@@ -19,10 +19,10 @@ NAMESPACE = 'hematopoiesis_spearman_louvain'
 N_COMPONENTS = 15
 INIT = 'eigen'
 
-VIZ_CELL_TYPES = True
+VIZ_CELL_TYPES = False
 VIZ_LOUVAIN = False
-VIZ_SPARSITY = True
-VIZ_STUDY = True
+VIZ_SPARSITY = False
+VIZ_STUDY = False
 VIZ_DICT_LEARN = True
 VIZ_CORR_COMP = False
 
@@ -285,6 +285,9 @@ if __name__ == '__main__':
         )
         savefig('figures/draw_graph_fa_{}_cluster_trajectory_dict{}.png'
                 .format(NAMESPACE, 'eryth'), ax)
+        eryth = dl.components_[[0, 1, 2, 3, 8, 9, 10, 11, 12, 14], :]
+        np.savetxt('{}/dictw{}.txt'.format(dirname, 'eryth'),
+                   np.median(eryth, 0))
 
     if VIZ_CORR_COMP:
         weights = np.loadtxt('{}/weights.txt'.format(dirname))

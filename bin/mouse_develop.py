@@ -87,17 +87,21 @@ def correct_seurat(Xs, genes):
 
 def correct_scvi(Xs, genes):
     import torch
-    use_cuda = True
     torch.cuda.set_device(1)
+    torch.manual_seed(0)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
+    use_cuda = True
+    from scvi.dataset import AnnDatasetFromAnnData
     from scvi.dataset.dataset import GeneExpressionDataset
     from scvi.inference import UnsupervisedTrainer
-    from scvi.models import SCANVI, VAE
-    from scvi.dataset.anndata import AnnDataset
+    from scvi.models import VAE
 
-    all_ann = [ AnnDataset(AnnData(X, var=genes)) for X in Xs ]
+    all_ann = [ AnnDatasetFromAnnData(AnnData(X, var=genes)) for X in Xs ]
 
-    all_dataset = GeneExpressionDataset.concat_datasets(*all_ann)
+    all_dataset = GeneExpressionDataset()
+    all_dataset.populate_from_datasets(all_ann)
 
     vae = VAE(
         all_dataset.nb_genes,
@@ -108,7 +112,7 @@ def correct_scvi(Xs, genes):
         n_layers=2,
         dispersion='gene'
     )
-    trainer = UnsupervisedTrainer(vae, all_dataset, train_size=0.99999)
+    trainer = UnsupervisedTrainer(vae, all_dataset, train_size=1.)
     n_epochs = 100
     trainer.train(n_epochs=n_epochs)
     torch.save(trainer.model.state_dict(),
@@ -211,19 +215,19 @@ if __name__ == '__main__':
 
     ct.sample_idx = list(range(X.shape[0]))
     ct.n_leaves = X.shape[0]
-    ct.fill_correlations(X)
+    #ct.fill_correlations(X)
+    #
+    #for node_idx, node in enumerate(ct.nodes):
+    #    if node.n_leaves < ct.min_leaves:
+    #        continue
+    #    avg_age = np.mean(ages[node.sample_idx])
+    #    save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'.format(
+    #        dirname, node_idx, avg_age, node.n_leaves
+    #    ), csr_matrix(node.correlations))
+    #
+    #exit()
 
-    for node_idx, node in enumerate(ct.nodes):
-        if node.n_leaves < ct.min_leaves:
-            continue
-        avg_age = np.mean(ages[node.sample_idx])
-        save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'.format(
-            dirname, node_idx, avg_age, node.n_leaves
-        ), csr_matrix(node.correlations))
-
-    exit()
-
-    expr_type = 'seurat'
+    expr_type = 'scvi'
 
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)

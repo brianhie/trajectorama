@@ -148,35 +148,38 @@ if __name__ == '__main__':
 
     ct.sample_idx = list(range(X.shape[0]))
     ct.n_leaves = X.shape[0]
-    ct.fill_correlations(X)
-
-    uniq_cell_types = sorted(set(cell_types))
-
-    with open('{}/cell_type_composition.txt'.format(dirname), 'w') as of:
-        of.write('node')
-        for cell_type in uniq_cell_types:
-            of.write('\t{}'.format(cell_type))
-        of.write('\n')
-
-        for node_idx, node in enumerate(ct.nodes):
-            if node.n_leaves < ct.min_leaves:
-                continue
-            save_npz('{}/node_{}_has_{}_leaves.npz'.format(
-                dirname, node_idx, node.n_leaves
-            ), node.correlations)
-
-            fractions = count_cell_types(cell_types[node.sample_idx])
-            of.write('{}\t'.format(node_idx))
-            of.write('\t'.join([ str(frac) for frac in fractions ]) + '\n')
-    exit()
+    #ct.fill_correlations(X)
+    #
+    #uniq_cell_types = sorted(set(cell_types))
+    #
+    #with open('{}/cell_type_composition.txt'.format(dirname), 'w') as of:
+    #    of.write('node')
+    #    for cell_type in uniq_cell_types:
+    #        of.write('\t{}'.format(cell_type))
+    #    of.write('\n')
+    #
+    #    for node_idx, node in enumerate(ct.nodes):
+    #        if node.n_leaves < ct.min_leaves:
+    #            continue
+    #        save_npz('{}/node_{}_has_{}_leaves.npz'.format(
+    #            dirname, node_idx, node.n_leaves
+    #        ), node.correlations)
+    #
+    #        fractions = count_cell_types(cell_types[node.sample_idx])
+    #        of.write('{}\t'.format(node_idx))
+    #        of.write('\t'.join([ str(frac) for frac in fractions ]) + '\n')
+    #exit()
 
     from mouse_develop import correct_scanorama, correct_scvi
 
-    expr_type = 'seurat'
+    expr_type = 'scvi'
 
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)
     if expr_type == 'scvi':
+        print('--------------------')
+        [ print(X.shape[0]) for X in Xs ]
+        print('--------------------')
         X = correct_scvi(Xs, genes)
         X[np.isnan(X)] = 0
         X[np.isinf(X)] = 0
@@ -196,7 +199,7 @@ if __name__ == '__main__':
         sc.pl.draw_graph(
             adata, color='study', edges=True, edges_color='#CCCCCC',
             save='_{}_expr_gmean_k{}.png'
-            .format(NAMESPACE + '_scvi', knn)
+            .format(NAMESPACE + '_' + expr_type, knn)
         )
         sys.stdout.flush()
 
@@ -206,6 +209,7 @@ if __name__ == '__main__':
     sc.tl.umap(adata, init_pos='random')
     sc.pl.scatter(
         adata, color='study', basis='umap',
-        save='_{}_umap_study.png'.format(NAMESPACE + '_scvi')
+        save='_{}_umap_study.png'.format(NAMESPACE + '_' + expr_type)
     )
-    np.save('data/hema_umap_coord_scvi.npy', adata.obsm['X_umap'])
+    np.save('data/hema_umap_coord_{}.npy'.format(expr_type),
+            adata.obsm['X_umap'])

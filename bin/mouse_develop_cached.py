@@ -17,12 +17,12 @@ NAMESPACE = 'mouse_develop_spearman_louvain'
 N_COMPONENTS = 15
 INIT = 'eigen'
 
-VIZ_AGE = False
+VIZ_AGE = True
 VIZ_KNN = False
 VIZ_SPARSITY = False
 VIZ_STUDY = False
 VIZ_DICT_LEARN = True
-VIZ_CORR_PSEUDOTIME = True
+VIZ_CORR_PSEUDOTIME = False
 
 def srp_worker(X, srp, triu_idx):
     return srp.transform(np.abs(X.toarray())[triu_idx].reshape(1, -1))[0]
@@ -168,7 +168,8 @@ if __name__ == '__main__':
             print('{}\t{}\t{}'.format(pair[0], pair[1], corr))
 
             if pair == ('FOS', 'FOS') or pair == ('PTGDS', 'PTGDS') or \
-               pair == ('LOXL2', 'LOXL2') or pair == ('LHX1', 'LHX1'):
+               pair == ('LOXL2', 'LOXL2') or pair == ('LHX1', 'LHX1') or \
+               pair == ('EOMES', 'EOMES'):
                 pair_name = '_'.join(pair)
                 pair_idx = gene_pairs.index(pair)
                 adata.obs[pair_name] = X_dimred[:, pair_idx]
