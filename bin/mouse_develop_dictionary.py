@@ -23,11 +23,4 @@ if __name__ == '__main__':
 
     networks, pair2comp = construct_networks(of_interest, dirname, genes)
 
-    baseline_fname = glob.glob(dirname + '/node_0_*.npz')[0]
-
-    n_tops = [ 5000, 10000, 15000, 20000 ]
-    for n_top in n_tops:
-        tprint('Top {} edges'.format(n_top))
-        network_overlap(networks, genes, baseline_fname, n_top)
-
     interpret_networks(networks, pair2comp, dirname, genes)
