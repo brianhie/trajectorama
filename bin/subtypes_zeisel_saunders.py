@@ -116,9 +116,13 @@ def interpret_clusters(coexpr, clusters, genes, sub_types, n_report=100):
         centroid_dist = cluster_coexpr - coexpr_mean # Sign is important.
         farthest_idx = np.argsort(-centroid_dist)
         ranked_pairs = gene_pairs[farthest_idx]
-        print('Cluster {}\n'.format(c_idx) +
-              '\n'.join([ str(pair) for pair in ranked_pairs[:n_report] ]) +
-              '\n')
+        ranked_dists = centroid_dist[farthest_idx]
+
+        print('Cluster {}\n'.format(c_idx))
+        for pair, weight in zip(ranked_pairs[:n_report],
+                                ranked_dists[:n_report]):
+            print('{}\t{}\t{}'.format(pair[0], pair[1], weight))
+
         ranked_genes = []
         used_genes = set()
         for gene1, gene2 in ranked_pairs:
@@ -180,12 +184,6 @@ if __name__ == '__main__':
     df = pd.DataFrame(-dist, index=types_cat, columns=types_cat)
     linkage, _ = plot_clustermap(df, dist, 'coexprcat')
     interpret_clustermap(coexpr_cat, genes, types_cat, linkage)
-
-    #for cutoff in [ 0.1, 0.3, 0.5, 0.7 ]:
-    #    coexpr_cat[np.abs(coexpr_cat) < cutoff] = 0
-    #    dist = pairwise_distances(coexpr_cat)
-    #    df = pd.DataFrame(-dist, index=types_cat, columns=types_cat)
-    #    plot_clustermap(df, dist, 'coexprcat{}'.format(cutoff))
 
     expr_cat = np.concatenate([ expr_zeisel, expr_saunders ])
 

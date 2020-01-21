@@ -106,6 +106,8 @@ if __name__ == '__main__':
 
     interpret_clustermap(coexpr, genes, types, linkage, n_clusters=2)
 
+    exit()
+
     Xs, cds, cd_names, ages = [], [], [], []
     for i in range(len(all_dimreds)):
         cell_types_i = np.array(all_datasets[i].obs['cell_types'])

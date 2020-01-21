@@ -4,6 +4,7 @@ import numpy as np
 import os
 from scanorama import process_data, plt, reduce_dimensionality, visualize
 import scanpy as sc
+from scipy.stats import spearmanr
 from scipy.sparse import vstack, save_npz
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder, normalize
@@ -94,7 +95,10 @@ if __name__ == '__main__':
     X = vstack(Xs)
     X = X.log1p()
 
-    #save_npz('{}/full_X.npz'.format(dirname), X)
+    #corr = spearmanr(X.todense())[0]
+    #corr[np.isnan(corr)] = 0.
+    #np.save('{}/full_corr.npy'.format(dirname), corr)
+    #del corr
 
     cell_types = np.concatenate(
         [ dataset.obs['cell_types'] for dataset in all_datasets ],
@@ -170,17 +174,23 @@ if __name__ == '__main__':
     #        of.write('\t'.join([ str(frac) for frac in fractions ]) + '\n')
     #exit()
 
-    from mouse_develop import correct_scanorama, correct_scvi
+    from mouse_develop import (
+        correct_harmony,
+        correct_scanorama,
+        correct_scvi,
+    )
 
-    expr_type = 'scvi'
+    expr_type = 'harmony'
 
+    if expr_type == 'harmony':
+        X = correct_harmony(all_dimreds)
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)
     if expr_type == 'scvi':
-        print('--------------------')
-        [ print(X.shape[0]) for X in Xs ]
-        print('--------------------')
-        X = correct_scvi(Xs, genes)
+        nonzero_idx = X.sum(1) > 0
+        X = np.zeros((X.shape[0], 30))
+        X_scvi = correct_scvi(Xs, genes)
+        X[nonzero_idx, :] = X_scvi
         X[np.isnan(X)] = 0
         X[np.isinf(X)] = 0
 

@@ -80,17 +80,20 @@ def network_overlap(networks, genes, baseline_fname, n_top_edges=10000):
     # Construct baseline network.
 
     baseline = nx.Graph()
-    baseline_corr = ss.load_npz(baseline_fname)
+    baseline_corr = np.load(baseline_fname)
     for gidx1, gene1 in enumerate(genes):
         for gidx2, gene2 in enumerate(genes):
             if gidx1 > gidx2:
                 continue
             if baseline_corr[gidx1, gidx2] != 0:
-                baseline.add_edge(gene1, gene2)
+                baseline.add_edge(
+                    gene1, gene2,
+                    weight=baseline_corr[gidx1, gidx2]
+                )
     baseline_net = nx.Graph()
     baseline_net.add_edges_from(
         sorted(baseline.edges(data=True),
-               key=lambda x: -x[2].get('weight', 1))[:n_top_edges]
+               key=lambda x: -abs(x[2].get('weight', 1)))[:n_top_edges]
     )
 
     # Construct target network.
@@ -101,7 +104,7 @@ def network_overlap(networks, genes, baseline_fname, n_top_edges=10000):
     target_net = nx.Graph()
     target_net.add_edges_from(
         sorted(target.edges(data=True),
-               key=lambda x: -x[2].get('weight', 1))[:n_top_edges]
+               key=lambda x: -abs(x[2].get('weight', 1)))[:n_top_edges]
     )
 
     # Compare with permuted networks.
@@ -271,15 +274,15 @@ if __name__ == '__main__':
     with open('{}/genes.txt'.format(dirname)) as f:
         genes = f.read().rstrip().split('\n')
 
-    of_interest = [ 5, 6, 13, 'eryth' ]
+    of_interest = list(range(15))#[ 5, 6, 13, 3 ]
 
     networks, pair2comp = construct_networks(of_interest, dirname, genes)
 
-    baseline_fname = glob.glob(dirname + '/node_0_*.npz')[0]
+    baseline_fname = dirname + '/full_corr.npy'
 
     n_tops = [ 5000, 10000, 15000, 20000 ]
     for n_top in n_tops:
         tprint('Top {} edges'.format(n_top))
         network_overlap(networks, genes, baseline_fname, n_top)
 
-    interpret_networks(networks, pair2comp, dirname, genes)
+    #interpret_networks(networks, pair2comp, dirname, genes)

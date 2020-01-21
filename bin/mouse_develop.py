@@ -4,6 +4,7 @@ import numpy as np
 import os
 from scanorama import process_data, plt, reduce_dimensionality, visualize
 import scanpy as sc
+from scipy.stats import spearmanr
 from scipy.sparse import vstack, save_npz, csr_matrix
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder, normalize
@@ -73,26 +74,45 @@ def correct_scanorama(Xs, genes):
     X = vstack(Xs)
     return X
 
-def correct_seurat(Xs, genes):
-    for X_idx, X in enumerate(Xs):
-        adata = AnnData(X)
-        adata.raw = adata
-        adata.var_names = genes
-        adata.obs_names = [ 'cell_{}_{}'.format(X_idx, i)
-                            for i in range(X.shape[0]) ]
-        adata.write('target/tmp/correct_seurat_{}.h5ad'.format(X_idx + 1))
+def correct_harmony(datasets_dimred, namespace):
+    from subprocess import Popen
 
-    exit()
+    dirname = 'target/harmony'
+    mkdir_p(dirname)
 
+    n_samples = sum([ ds.shape[0] for ds in datasets_dimred ])
+
+    embed_fname = '{}/embedding.txt'.format(dirname)
+    label_fname = '{}/labels.txt'.format(dirname)
+
+    np.savetxt(embed_fname, np.concatenate(datasets_dimred))
+
+    labels = []
+    curr_label = 0
+    for i, a in enumerate(datasets_dimred):
+        labels += list(np.zeros(a.shape[0]) + curr_label)
+        curr_label += 1
+    labels = np.array(labels, dtype=int)
+    np.savetxt(label_fname, labels)
+
+    tprint('Integrating with harmony...')
+    rcode = Popen('Rscript bin/R/harmony.R {} {} > harmony.log 2>&1'
+                  .format(embed_fname, label_fname), shell=True).wait()
+    if rcode != 0:
+        sys.stderr.write('ERROR: subprocess returned error code {}\n'
+                         .format(rcode))
+        exit(rcode)
+    tprint('Done with harmony integration')
+
+    integrated = np.loadtxt('{}/integrated.txt'.format(dirname))
+    return integrated
 
 def correct_scvi(Xs, genes):
     import torch
-    torch.cuda.set_device(1)
     torch.manual_seed(0)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    use_cuda = True
     from scvi.dataset import AnnDatasetFromAnnData
     from scvi.dataset.dataset import GeneExpressionDataset
     from scvi.inference import UnsupervisedTrainer
@@ -112,7 +132,9 @@ def correct_scvi(Xs, genes):
         n_layers=2,
         dispersion='gene'
     )
-    trainer = UnsupervisedTrainer(vae, all_dataset, train_size=1.)
+    trainer = UnsupervisedTrainer(
+        vae, all_dataset, train_size=1., use_cuda=True,
+    )
     n_epochs = 100
     trainer.train(n_epochs=n_epochs)
     torch.save(trainer.model.state_dict(),
@@ -158,6 +180,11 @@ if __name__ == '__main__':
 
     X = vstack(Xs)
     X = X.log1p()
+
+    #corr = spearmanr(X.todense())[0]
+    #corr[np.isnan(corr)] = 0.
+    #np.save('{}/full_corr.npy'.format(dirname), corr)
+    #del corr
 
     cell_types = np.concatenate(
         [ dataset.obs['cell_types'] for dataset in all_datasets ],
@@ -227,16 +254,16 @@ if __name__ == '__main__':
     #
     #exit()
 
-    expr_type = 'scvi'
+    expr_type = 'harmony'
 
+    if expr_type == 'harmony':
+        X = correct_harmony(all_dimreds)
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)
     if expr_type == 'scvi':
         X = correct_scvi(Xs, genes)
         X[np.isnan(X)] = 0
         X[np.isinf(X)] = 0
-    if expr_type == 'seurat':
-        X = correct_seurat(Xs, genes)
 
     C = np.vstack([
         X[node.sample_idx].mean(0)
