@@ -88,7 +88,7 @@ def plot_clustermap(df, dist, suffix, prefix='subtypes_zeisel_saunders'):
     return row_linkage, col_linkage
 
 def interpret_clustermap(coexpr, genes, sub_types, linkage,
-                         n_clusters=5, n_report=100):
+                         n_clusters=5, n_report=150):
     clusters = hierarchy.fcluster(linkage, n_clusters, 'maxclust')
     interpret_clusters(coexpr, clusters, genes, sub_types, n_report)
 

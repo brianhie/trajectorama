@@ -187,7 +187,7 @@ if __name__ == '__main__':
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)
     if expr_type == 'scvi':
-        nonzero_idx = X.sum(1) > 0
+        nonzero_idx = np.array(X.sum(1) > 0).flatten()
         X = np.zeros((X.shape[0], 30))
         X_scvi = correct_scvi(Xs, genes)
         X[nonzero_idx, :] = X_scvi

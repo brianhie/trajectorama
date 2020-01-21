@@ -104,7 +104,8 @@ if __name__ == '__main__':
 
     print(types)
 
-    interpret_clustermap(coexpr, genes, types, linkage, n_clusters=2)
+    interpret_clustermap(coexpr, genes, types, linkage,
+                         n_clusters=2, n_report=150)
 
     exit()
 

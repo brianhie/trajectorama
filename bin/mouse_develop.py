@@ -74,7 +74,7 @@ def correct_scanorama(Xs, genes):
     X = vstack(Xs)
     return X
 
-def correct_harmony(datasets_dimred, namespace):
+def correct_harmony(datasets_dimred):
     from subprocess import Popen
 
     dirname = 'target/harmony'
@@ -136,9 +136,9 @@ def correct_scvi(Xs, genes):
         vae, all_dataset, train_size=1., use_cuda=True,
     )
     n_epochs = 100
-    trainer.train(n_epochs=n_epochs)
-    torch.save(trainer.model.state_dict(),
-               'data/harmonization.vae.pkl')
+    #trainer.train(n_epochs=n_epochs)
+    #torch.save(trainer.model.state_dict(),
+    #           'data/harmonization.vae.pkl')
     trainer.model.load_state_dict(torch.load('data/harmonization.vae.pkl'))
     trainer.model.eval()
 
