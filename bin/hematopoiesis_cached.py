@@ -9,9 +9,7 @@ import seaborn as sns
 from sklearn.random_projection import GaussianRandomProjection
 from sklearn.random_projection import SparseRandomProjection
 
-from dict_learning import DictionaryLearning
 from draw_graph import draw_graph
-from spddl import CovarianceDictionary
 from utils import *
 
 NAMESPACE = 'hematopoiesis_spearman_louvain'
