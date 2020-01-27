@@ -74,22 +74,24 @@ def correct_scanorama(Xs, genes):
     X = vstack(Xs)
     return X
 
-def correct_harmony(datasets_dimred):
+def correct_harmony(Xs, genes, n_pcs=50):
+    from fbpca import pca
     from subprocess import Popen
 
     dirname = 'target/harmony'
     mkdir_p(dirname)
 
-    n_samples = sum([ ds.shape[0] for ds in datasets_dimred ])
-
     embed_fname = '{}/embedding.txt'.format(dirname)
     label_fname = '{}/labels.txt'.format(dirname)
 
-    np.savetxt(embed_fname, np.concatenate(datasets_dimred))
+    X = vstack(Xs)
+    U, s, _ = pca(X, k=n_pcs)
+    X_dimred = U * s
+    np.savetxt(embed_fname, X_dimred)
 
     labels = []
     curr_label = 0
-    for i, a in enumerate(datasets_dimred):
+    for i, a in enumerate(Xs):
         labels += list(np.zeros(a.shape[0]) + curr_label)
         curr_label += 1
     labels = np.array(labels, dtype=int)
@@ -257,7 +259,7 @@ if __name__ == '__main__':
     expr_type = 'harmony'
 
     if expr_type == 'harmony':
-        X = correct_harmony(all_dimreds)
+        X = correct_harmony(Xs, genes)
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)
     if expr_type == 'scvi':

@@ -26,7 +26,7 @@ DR_METHOD = 'svd'
 REASSEMBLE_METHOD = 'louvain'
 REASSEMBLE_K = 15
 
-CORR_CUTOFF = 0.7
+CORR_CUTOFF = 0.1
 RANDOM_PROJ = False
 
 NAMESPACE = 'microglia_{}_{}'.format(CORR_METHOD, DAG_METHOD)
@@ -83,6 +83,8 @@ if __name__ == '__main__':
         verbose=True
     )
 
+    [ tprint(X.shape[0]) for X in X_studies ]
+
     cell_types = np.concatenate(
         [ dataset.obs['cell_types'] for dataset in all_datasets ],
         axis=None
@@ -107,15 +109,10 @@ if __name__ == '__main__':
     interpret_clustermap(coexpr, genes, types, linkage,
                          n_clusters=2, n_report=150)
 
-    exit()
-
     Xs, cds, cd_names, ages = [], [], [], []
     for i in range(len(all_dimreds)):
         cell_types_i = np.array(all_datasets[i].obs['cell_types'])
         for cell_type in sorted(set(cell_types_i)):
-            if 'human' in cell_type or '_ms_' in cell_type or \
-               '_fxn_' in cell_type or 'myelin' in cell_type:
-                continue
             type_idx = cell_types_i == cell_type
             Xs.append(X_studies[i][type_idx])
             X_dimred = all_dimreds[i][type_idx]

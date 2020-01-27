@@ -183,7 +183,7 @@ if __name__ == '__main__':
     expr_type = 'harmony'
 
     if expr_type == 'harmony':
-        X = correct_harmony(all_dimreds)
+        X = correct_harmony(Xs, genes)
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)
     if expr_type == 'scvi':

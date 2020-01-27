@@ -4,6 +4,7 @@ import numpy as np
 from scanorama import plt, visualize
 import scanpy as sc
 import scipy.sparse as ss
+from scipy.stats import pearsonr, spearmanr
 import seaborn as sns
 from sklearn.random_projection import GaussianRandomProjection
 from sklearn.random_projection import SparseRandomProjection
@@ -137,8 +138,6 @@ if __name__ == '__main__':
     adata.uns['iroot'] = np.flatnonzero(adata.obs['age'] < 9.6)[0]
     sc.tl.dpt(adata)
     adata.obs['dpt_pseudotime'][adata.obs['dpt_pseudotime'] > 0.19] = 0.19
-    #adata.obs['dpt_pseudotime'] /= 0.20
-    from scipy.stats import pearsonr, spearmanr
     print(pearsonr(adata.obs['dpt_pseudotime'], adata.obs['age']))
     print(spearmanr(adata.obs['dpt_pseudotime'], adata.obs['age']))
 
