@@ -152,27 +152,27 @@ if __name__ == '__main__':
 
     ct.sample_idx = list(range(X.shape[0]))
     ct.n_leaves = X.shape[0]
-    #ct.fill_correlations(X)
-    #
-    #uniq_cell_types = sorted(set(cell_types))
-    #
-    #with open('{}/cell_type_composition.txt'.format(dirname), 'w') as of:
-    #    of.write('node')
-    #    for cell_type in uniq_cell_types:
-    #        of.write('\t{}'.format(cell_type))
-    #    of.write('\n')
-    #
-    #    for node_idx, node in enumerate(ct.nodes):
-    #        if node.n_leaves < ct.min_leaves:
-    #            continue
-    #        save_npz('{}/node_{}_has_{}_leaves.npz'.format(
-    #            dirname, node_idx, node.n_leaves
-    #        ), node.correlations)
-    #
-    #        fractions = count_cell_types(cell_types[node.sample_idx])
-    #        of.write('{}\t'.format(node_idx))
-    #        of.write('\t'.join([ str(frac) for frac in fractions ]) + '\n')
-    #exit()
+    ct.fill_correlations(X)
+
+    uniq_cell_types = sorted(set(cell_types))
+
+    with open('{}/cell_type_composition.txt'.format(dirname), 'w') as of:
+        of.write('node')
+        for cell_type in uniq_cell_types:
+            of.write('\t{}'.format(cell_type))
+        of.write('\n')
+
+        for node_idx, node in enumerate(ct.nodes):
+            if node.n_leaves < ct.min_leaves:
+                continue
+            save_npz('{}/node_{}_has_{}_leaves.npz'.format(
+                dirname, node_idx, node.n_leaves
+            ), node.correlations)
+
+            fractions = count_cell_types(cell_types[node.sample_idx])
+            of.write('{}\t'.format(node_idx))
+            of.write('\t'.join([ str(frac) for frac in fractions ]) + '\n')
+    exit()
 
     from mouse_develop import (
         correct_harmony,

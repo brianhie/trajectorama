@@ -1,13 +1,13 @@
 
-## Coscape
+## Trajectorama
 
-Coscape is an algorithm that implements coexpression-based integrative analysis of multi-study single cell transcriptomics. Coscape is described in the paper ["Coexpression uncovers a unified single-cell transcriptomic landscape"](https://www.biorxiv.org/content/10.1101/719088v1) by Brian Hie, Hyunghoon Cho, Bryan Bryson, and Bonnie Berger.
+Trajectorama is an algorithm that implements coexpression-based integration of multi-study single-cell trajectories. Trajectorama is described in the paper ["Coexpression enables multi-study cellular trajectories of development and disease"](https://www.biorxiv.org/content/10.1101/719088v1) by Brian Hie, Hyunghoon Cho, Bryan Bryson, and Bonnie Berger.
 
-**Coscape is still under active development. Follow the repository for changes and improvements.**
+**Trajectorama is still under active development. Follow the repository for changes and improvements.**
 
 ### Dependencies
 
-Coscape is tested with Python version 3.7 on Ubuntu 18.04. There are a number of Python package dependencies.
+Trajectorama is tested with Python version 3.7 on Ubuntu 18.04. There are a number of Python package dependencies.
 
 Scientific python packages included in [Anaconda](https://www.anaconda.com/distribution/) are listed below (tested versions listed):
 - scikit-learn (0.20.3)
@@ -30,14 +30,14 @@ cd louvain-igraph
 python setup.py install
 ```
 
-### Coscape for mouse neuronal development
+### Trajectorama for mouse neuronal development
 
-Coscape analyzes five large-scale studies of mouse neurons over multiple points in development.
+Trajectorama analyzes five large-scale studies of mouse neurons over multiple points in development.
 
-Data can be found at http://coscape.csail.mit.edu/data_mouse_develop.tar.gz and can be downloaded as:
+Data can be found at http://trajectorama.csail.mit.edu/data.tar.gz and can be downloaded as:
 ```
-wget http://coscape.csail.mit.edu/data_mouse_develop.tar.gz
-tar xvf data_mouse_develop.tar.gz
+wget http://trajectorama.csail.mit.edu/data.tar.gz
+tar xvf data.tar.gz
 ```
 
 To preprocess the data, run the command:
@@ -58,13 +58,14 @@ python bin/mouse_develop_dictionary.py >> mouse_develop.log
 This will log some relevant statistics and save visualizations under the `figures/` directory.
 
 
-### Coscape for human hematopoiesis
+### Trajectorama for human hematopoiesis
 
 We can perform a similar workflow for human hematopoiesis by running the commands:
 ```
-# Download and preprocess.
-wget http://coscape.csail.mit.edu/data_hematopoiesis.tar.gz
-tar xvf data_hematopoiesis.tar.gz
+# Download (if not done so for mouse data).
+wget http://trajectorama.csail.mit.edu/data.tar.gz
+tar xvf data.tar.gz
+# Preprocess.
 python bin/process.py conf/hematopoiesis.txt
 
 # Analyze.

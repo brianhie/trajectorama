@@ -244,17 +244,17 @@ if __name__ == '__main__':
 
     ct.sample_idx = list(range(X.shape[0]))
     ct.n_leaves = X.shape[0]
-    #ct.fill_correlations(X)
-    #
-    #for node_idx, node in enumerate(ct.nodes):
-    #    if node.n_leaves < ct.min_leaves:
-    #        continue
-    #    avg_age = np.mean(ages[node.sample_idx])
-    #    save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'.format(
-    #        dirname, node_idx, avg_age, node.n_leaves
-    #    ), csr_matrix(node.correlations))
-    #
-    #exit()
+    ct.fill_correlations(X)
+
+    for node_idx, node in enumerate(ct.nodes):
+        if node.n_leaves < ct.min_leaves:
+            continue
+        avg_age = np.mean(ages[node.sample_idx])
+        save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'.format(
+            dirname, node_idx, avg_age, node.n_leaves
+        ), csr_matrix(node.correlations))
+
+    exit()
 
     expr_type = 'harmony'
 
