@@ -1,12 +1,13 @@
 from anndata import AnnData
+import loompy
 import numpy as np
 import os
 from scanorama import *
 import scanpy as sc
 from scipy.sparse import vstack
-from sklearn.preprocessing import normalize, LabelEncoder
+from sklearn.preprocessing import normalize
 
-from process import load_names
+from process import process, load_names, merge_datasets
 from utils import *
 
 NAMESPACE = 'zeisel_adolescent_brain'
@@ -32,8 +33,15 @@ data_names = [
 ]
 
 def keep_valid(datasets):
+    barcode_sub_type = {}
+    with loompy.connect('data/mouse_brain/zeisel/l6_r1.loom') as ds:
+        for barcode, sub_type in zip(ds.ca['CellID'], ds.ca['ClusterName']):
+        #for barcode, sub_type in zip(ds.ca['CellID'], ds.ca['Taxonomy_group']):
+            barcode_sub_type[barcode] = sub_type
+
     valid_idx = []
     cell_types = []
+    sub_types = []
     ages = []
     for data_name in data_names:
         with open('{}/meta.tsv'.format(data_name)) as f:
@@ -45,6 +53,10 @@ def keep_valid(datasets):
                 if fields[1] == 'Neurons' and fields[2] != '?':
                     valid_idx.append(j)
                     cell_types.append(fields[1])
+                    if fields[0] in barcode_sub_type:
+                        sub_types.append(barcode_sub_type[fields[0]])
+                    else:
+                        sub_types.append('NA')
                     try:
                         age = float(fields[2][1:])
                     except ValueError:
@@ -67,13 +79,13 @@ def keep_valid(datasets):
                             continue
                     min_age = 19.
                     max_age = 60.
-                    offset = (age - min_age) / (max_age - min_age)
+                    offset = (age - min_age) / (max_age - min_age) * 3
                     ages.append(19 + offset)
 
-    return valid_idx, np.array(cell_types), np.array(ages)
+    return valid_idx, np.array(cell_types), np.array(ages), np.array(sub_types)
 
 datasets, genes_list, n_cells = load_names(data_names, norm=False)
-qc_idx, cell_types, ages = keep_valid(datasets)
+qc_idx, cell_types, ages, sub_types = keep_valid(datasets)
 datasets, genes = merge_datasets(datasets, genes_list)
 
 X = vstack(datasets)
@@ -84,8 +96,8 @@ qc_idx = [ i for i, s in enumerate(np.sum(X != 0, axis=1))
 tprint('Found {} valid cells among all datasets'.format(len(qc_idx)))
 X = X[qc_idx]
 cell_types = cell_types[qc_idx]
+sub_types = sub_types[qc_idx]
 ages = ages[qc_idx]
-
 
 if not os.path.isfile('data/dimred/{}_{}.txt'
                       .format(DR_METHOD, NAMESPACE)):
@@ -102,6 +114,7 @@ else:
 dataset = AnnData(X)
 dataset.var['gene_symbols'] = genes
 dataset.obs['cell_types'] = [ NAMESPACE + '_' + l for l in cell_types ]
+dataset.obs['sub_types'] = [ NAMESPACE + '_' + l for l in sub_types ]
 dataset.obs['ages'] = ages
 datasets = [ dataset ]
 namespaces = [ NAMESPACE ]

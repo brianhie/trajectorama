@@ -1,5 +1,6 @@
-from pan_dag import *
+import warnings
 
+from pan_dag import *
 from utils import *
 
 def pearson_multi(X_dag):
@@ -23,11 +24,15 @@ def pearson_multi(X_dag):
 def spearman_multi(X_dag):
     from scipy.stats import spearmanr
 
-    corr, corr_scores = spearmanr(
-        X_dag, nan_policy='omit'
-    )
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore')
+        corr, corr_scores = spearmanr(
+            X_dag, nan_policy='omit'
+        )
 
     corr[np.isnan(corr)] = 0
+    corr[corr > 1.] = 1.
+    corr[corr < -1.] = -1.
 
     return corr
 

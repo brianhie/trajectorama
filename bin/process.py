@@ -26,6 +26,7 @@ def load_tab(fname, delim='\t'):
             if fname.endswith('.gz'):
                 line = line.decode('utf-8')
             fields = line.rstrip().replace('"', '').split(delim)
+
             genes.append(fields[0])
             X.append([ float(f) for f in fields[1:] ])
 
@@ -41,9 +42,23 @@ def load_tab(fname, delim='\t'):
     return np.array(X).T, np.array(cells), np.array(genes)
 
 def load_mtx(dname):
-    with open(dname + '/matrix.mtx', 'r') as f:
+    if os.path.isfile(dname + '/matrix.mtx.gz'):
+        opener = gzip.open
+        fname = dname + '/matrix.mtx.gz'
+        is_gzip = True
+    elif os.path.isfile(dname + '/matrix.mtx'):
+        opener = open
+        fname = dname + '/matrix.mtx'
+        is_gzip = False
+    else:
+        raise FileNotFoundError('Could not find MTX file {}'
+                                .format(dname + '/matrix.mtx'))
+
+    with opener(fname, 'r') as f:
         while True:
             header = f.readline()
+            if is_gzip:
+                header = header.decode('utf-8')
             if not header.startswith('%'):
                 break
         header = header.rstrip().split()
@@ -51,15 +66,24 @@ def load_mtx(dname):
 
         data, i, j = [], [], []
         for line in f:
+            if is_gzip:
+                line = line.decode('utf-8')
             fields = line.rstrip().split()
             data.append(float(fields[2]))
             i.append(int(fields[1])-1)
             j.append(int(fields[0])-1)
         X = csr_matrix((data, (i, j)), shape=(n_cells, n_genes))
 
+    if is_gzip:
+        gene_fname = dname + '/genes.tsv.gz'
+    else:
+        gene_fname = dname + '/genes.tsv'
+
     genes = []
-    with open(dname + '/genes.tsv', 'r') as f:
+    with opener(gene_fname, 'r') as f:
         for line in f:
+            if is_gzip:
+                line = line.decode('utf-8')
             fields = line.rstrip().split()
             genes.append(fields[1])
     assert(len(genes) == n_genes)
@@ -101,6 +125,9 @@ def load_h5(fname, genome='GRCh38'):
     return X, np.array(genes)
 
 def process_tab(fname, min_trans=MIN_TRANSCRIPTS, delim='\t'):
+    if fname.endswith('.csv') or fname.endswith('.csv.gz'):
+        delim = ','
+
     X, cells, genes = load_tab(fname, delim=delim)
 
     gt_idx = [ i for i, s in enumerate(np.sum(X != 0, axis=1))

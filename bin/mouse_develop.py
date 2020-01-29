@@ -4,7 +4,8 @@ import numpy as np
 import os
 from scanorama import process_data, plt, reduce_dimensionality, visualize
 import scanpy as sc
-from scipy.sparse import vstack, save_npz
+from scipy.stats import spearmanr
+from scipy.sparse import vstack, save_npz, csr_matrix
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder, normalize
 import sys
@@ -15,8 +16,7 @@ from pan_dag import PanDAG
 from process import merge_datasets
 from utils import *
 
-
-CORR_METHOD = 'pearson'
+CORR_METHOD = 'spearman'
 DAG_METHOD = 'louvain'
 DIMRED = 100
 DR_METHOD = 'svd'
@@ -32,38 +32,39 @@ NAMESPACE = 'mouse_develop_{}_{}'.format(CORR_METHOD, DAG_METHOD)
 if RANDOM_PROJ:
     NAMESPACE += '_randproj'
 
-all_datasets = []
-all_namespaces = []
-all_dimreds = []
+def import_data():
+    all_datasets, all_namespaces, all_dimreds = [], [], []
 
-from dataset_mouse_gastr_late_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_mca_fetal_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_cortical import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_mca_neonatal_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_zeisel_adolescent_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_saunders_adult_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
-from dataset_mca_adult_brain import datasets, namespaces, X_dimred
-all_datasets += datasets
-all_namespaces += namespaces
-all_dimreds.append(X_dimred)
+    from dataset_mouse_gastr_late_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_mca_fetal_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_cortical import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_mca_neonatal_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_zeisel_adolescent_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_saunders_adult_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+    from dataset_mca_adult_brain import datasets, namespaces, X_dimred
+    all_datasets += datasets
+    all_namespaces += namespaces
+    all_dimreds.append(X_dimred)
+
+    return all_datasets, all_namespaces, all_dimreds
 
 def correct_scanorama(Xs, genes):
     from scanorama import correct
@@ -73,19 +74,56 @@ def correct_scanorama(Xs, genes):
     X = vstack(Xs)
     return X
 
+def correct_harmony(Xs, genes, n_pcs=50):
+    from fbpca import pca
+    from subprocess import Popen
+
+    dirname = 'target/harmony'
+    mkdir_p(dirname)
+
+    embed_fname = '{}/embedding.txt'.format(dirname)
+    label_fname = '{}/labels.txt'.format(dirname)
+
+    X = vstack(Xs)
+    U, s, _ = pca(X, k=n_pcs)
+    X_dimred = U * s
+    np.savetxt(embed_fname, X_dimred)
+
+    labels = []
+    curr_label = 0
+    for i, a in enumerate(Xs):
+        labels += list(np.zeros(a.shape[0]) + curr_label)
+        curr_label += 1
+    labels = np.array(labels, dtype=int)
+    np.savetxt(label_fname, labels)
+
+    tprint('Integrating with harmony...')
+    rcode = Popen('Rscript bin/R/harmony.R {} {} > harmony.log 2>&1'
+                  .format(embed_fname, label_fname), shell=True).wait()
+    if rcode != 0:
+        sys.stderr.write('ERROR: subprocess returned error code {}\n'
+                         .format(rcode))
+        exit(rcode)
+    tprint('Done with harmony integration')
+
+    integrated = np.loadtxt('{}/integrated.txt'.format(dirname))
+    return integrated
+
 def correct_scvi(Xs, genes):
     import torch
-    use_cuda = True
-    torch.cuda.set_device(1)
+    torch.manual_seed(0)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
+    from scvi.dataset import AnnDatasetFromAnnData
     from scvi.dataset.dataset import GeneExpressionDataset
     from scvi.inference import UnsupervisedTrainer
-    from scvi.models import SCANVI, VAE
-    from scvi.dataset.anndata import AnnDataset
+    from scvi.models import VAE
 
-    all_ann = [ AnnDataset(AnnData(X, var=genes)) for X in Xs ]
+    all_ann = [ AnnDatasetFromAnnData(AnnData(X, var=genes)) for X in Xs ]
 
-    all_dataset = GeneExpressionDataset.concat_datasets(*all_ann)
+    all_dataset = GeneExpressionDataset()
+    all_dataset.populate_from_datasets(all_ann)
 
     vae = VAE(
         all_dataset.nb_genes,
@@ -96,7 +134,9 @@ def correct_scvi(Xs, genes):
         n_layers=2,
         dispersion='gene'
     )
-    trainer = UnsupervisedTrainer(vae, all_dataset, train_size=0.99999)
+    trainer = UnsupervisedTrainer(
+        vae, all_dataset, train_size=1., use_cuda=True,
+    )
     n_epochs = 100
     #trainer.train(n_epochs=n_epochs)
     #torch.save(trainer.model.state_dict(),
@@ -114,6 +154,8 @@ def correct_scvi(Xs, genes):
 if __name__ == '__main__':
     dirname = 'target/sparse_correlations/{}'.format(NAMESPACE)
     mkdir_p(dirname)
+
+    all_datasets, all_namespaces, all_dimreds = import_data()
 
     hv_genes = None
     for i, dataset in enumerate(all_datasets):
@@ -140,6 +182,11 @@ if __name__ == '__main__':
 
     X = vstack(Xs)
     X = X.log1p()
+
+    #corr = spearmanr(X.todense())[0]
+    #corr[np.isnan(corr)] = 0.
+    #np.save('{}/full_corr.npy'.format(dirname), corr)
+    #del corr
 
     cell_types = np.concatenate(
         [ dataset.obs['cell_types'] for dataset in all_datasets ],
@@ -205,12 +252,14 @@ if __name__ == '__main__':
         avg_age = np.mean(ages[node.sample_idx])
         save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'.format(
             dirname, node_idx, avg_age, node.n_leaves
-        ), node.correlations)
+        ), csr_matrix(node.correlations))
 
     exit()
 
-    expr_type = 'uncorrected'
+    expr_type = 'harmony'
 
+    if expr_type == 'harmony':
+        X = correct_harmony(Xs, genes)
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)
     if expr_type == 'scvi':
@@ -218,24 +267,11 @@ if __name__ == '__main__':
         X[np.isnan(X)] = 0
         X[np.isinf(X)] = 0
 
-    if expr_type == 'uncorrected':
-        # Geometric mean for nonnegative count data.
-        C = np.vstack([
-            (np.exp(
-                ((1. / node.n_leaves) * np.log1p(X[node.sample_idx]).sum(0)) - 1
-            ) + 1) / (
-                (1. / node.n_leaves) * X[node.sample_idx].sum(0) + 1
-            )
-            for node in ct.nodes
-            if node.n_leaves >= ct.min_leaves
-        ])
-    else:
-        # Regular mean for continuous data.
-        C = np.vstack([
-            X[node.sample_idx].mean(0)
-            for node in ct.nodes
-            if node.n_leaves >= ct.min_leaves
-        ])
+    C = np.vstack([
+        X[node.sample_idx].mean(0)
+        for node in ct.nodes
+        if node.n_leaves >= ct.min_leaves
+    ])
 
     np.save('data/expression_cluster_{}.npy'.format(expr_type), C)
 

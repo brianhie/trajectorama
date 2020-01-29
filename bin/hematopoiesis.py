@@ -4,6 +4,7 @@ import numpy as np
 import os
 from scanorama import process_data, plt, reduce_dimensionality, visualize
 import scanpy as sc
+from scipy.stats import spearmanr
 from scipy.sparse import vstack, save_npz
 import seaborn as sns
 from sklearn.preprocessing import LabelEncoder, normalize
@@ -16,7 +17,7 @@ from process import merge_datasets
 from utils import *
 
 
-CORR_METHOD = 'pearson'
+CORR_METHOD = 'spearman'
 DAG_METHOD = 'louvain'
 DIMRED = 100
 DR_METHOD = 'svd'
@@ -41,6 +42,10 @@ all_datasets += datasets
 all_namespaces += namespaces
 all_dimreds.append(X_dimred)
 from dataset_cordblood_ica import datasets, namespaces, X_dimred
+all_datasets += datasets
+all_namespaces += namespaces
+all_dimreds.append(X_dimred)
+from dataset_zeng_develop_thymus import datasets, namespaces, X_dimred
 all_datasets += datasets
 all_namespaces += namespaces
 all_dimreds.append(X_dimred)
@@ -78,17 +83,22 @@ if __name__ == '__main__':
 
     # Keep only those highly variable genes.
 
-    Xs, genes = merge_datasets([ dataset.X for dataset in all_datasets ],
-                               [ dataset.var['gene_symbols'] for dataset in all_datasets ],
-                               keep_genes=hv_genes, ds_names=all_namespaces,
-                               verbose=True)
+    Xs, genes = merge_datasets(
+        [ dataset.X for dataset in all_datasets ],
+        [ dataset.var['gene_symbols'] for dataset in all_datasets ],
+        keep_genes=hv_genes, ds_names=all_namespaces,
+        verbose=True
+    )
 
     [ print(X.shape[0]) for X in Xs ]
 
     X = vstack(Xs)
     X = X.log1p()
 
-    #save_npz('{}/full_X.npz'.format(dirname), X)
+    #corr = spearmanr(X.todense())[0]
+    #corr[np.isnan(corr)] = 0.
+    #np.save('{}/full_corr.npy'.format(dirname), corr)
+    #del corr
 
     cell_types = np.concatenate(
         [ dataset.obs['cell_types'] for dataset in all_datasets ],
@@ -164,20 +174,32 @@ if __name__ == '__main__':
             of.write('\t'.join([ str(frac) for frac in fractions ]) + '\n')
     exit()
 
-    from mouse_develop import correct_scanorama, correct_scvi
-    #X = correct_scanorama(Xs, genes)
-    X = correct_scvi(Xs, genes)
+    from mouse_develop import (
+        correct_harmony,
+        correct_scanorama,
+        correct_scvi,
+    )
+
+    expr_type = 'harmony'
+
+    if expr_type == 'harmony':
+        X = correct_harmony(Xs, genes)
+    if expr_type == 'scanorama':
+        X = correct_scanorama(Xs, genes)
+    if expr_type == 'scvi':
+        nonzero_idx = np.array(X.sum(1) > 0).flatten()
+        X = np.zeros((X.shape[0], 30))
+        X_scvi = correct_scvi(Xs, genes)
+        X[nonzero_idx, :] = X_scvi
+        X[np.isnan(X)] = 0
+        X[np.isinf(X)] = 0
 
     C = np.vstack([
-        #(np.exp(
-        #    ((1. / node.n_leaves) * np.log1p(X[node.sample_idx]).sum(0)) - 1
-        #) + 1) / (
-        #    (1. / node.n_leaves) * X[node.sample_idx].sum(0) + 1
-        #)
         X[node.sample_idx].mean(0)
         for node in ct.nodes
         if node.n_leaves >= ct.min_leaves
     ])
+
     adata = AnnData(X=C)
     adata.obs['study'] = studies
 
@@ -187,7 +209,7 @@ if __name__ == '__main__':
         sc.pl.draw_graph(
             adata, color='study', edges=True, edges_color='#CCCCCC',
             save='_{}_expr_gmean_k{}.png'
-            .format(NAMESPACE + '_scvi', knn)
+            .format(NAMESPACE + '_' + expr_type, knn)
         )
         sys.stdout.flush()
 
@@ -197,6 +219,7 @@ if __name__ == '__main__':
     sc.tl.umap(adata, init_pos='random')
     sc.pl.scatter(
         adata, color='study', basis='umap',
-        save='_{}_umap_study.png'.format(NAMESPACE + '_scvi')
+        save='_{}_umap_study.png'.format(NAMESPACE + '_' + expr_type)
     )
-    np.save('data/hema_umap_coord_scvi.npy', adata.obsm['X_umap'])
+    np.save('data/hema_umap_coord_{}.npy'.format(expr_type),
+            adata.obsm['X_umap'])

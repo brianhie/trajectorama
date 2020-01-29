@@ -12,23 +12,22 @@ from sklearn.random_projection import SparseRandomProjection
 from draw_graph import draw_graph
 from utils import *
 
-NAMESPACE = 'mouse_develop_spearman_louvain'
+NAMESPACE = 'microglia_spearman_louvain'
 
-N_COMPONENTS = 15
+N_COMPONENTS = 20
 INIT = 'eigen'
 
 VIZ_AGE = True
-VIZ_KNN = False
-VIZ_SPARSITY = False
-VIZ_STUDY = False
-VIZ_DICT_LEARN = True
-VIZ_CORR_PSEUDOTIME = False
+VIZ_KNN = True
+VIZ_SPARSITY = True
+VIZ_STUDY = True
+VIZ_CORR_PSEUDOTIME = True
 
 def srp_worker(X, srp, triu_idx):
     return srp.transform(np.abs(X.toarray())[triu_idx].reshape(1, -1))[0]
 
 def savefig(fname, ax):
-    ratio = 2.
+    ratio = 1.
     xmin, xmax = ax.get_xlim()
     ymin, ymax = ax.get_ylim()
     ax.set_aspect(abs((xmax - xmin) / (ymax - ymin)) * ratio)
@@ -68,9 +67,14 @@ if __name__ == '__main__':
             continue
 
         X = ss.load_npz(dirname + '/' + fname)
+        sparse_cutoff = 50000
+        if len(X.data) > sparse_cutoff:
+            cutoff = sorted(-abs(X.data))[sparse_cutoff - 1]
+            X[abs(X) < abs(cutoff)] = 0
         Xs.append(X)
 
-        nonzero_idx |= set([ (r, c) for r, c in zip(*X.nonzero()) ])
+        nonzero_set = set([ (r, c) for r, c in zip(*X.nonzero()) ])
+        nonzero_idx |= nonzero_set
 
         node_idxs.append(int(fields[1]))
         ages.append(float(fields[3]))
@@ -83,23 +87,15 @@ if __name__ == '__main__':
     n_correlations = int(comb(n_features, 2) + n_features)
     triu_idx = np.triu_indices(n_features)
 
-    print(len(nonzero_idx))
+    tprint(len(nonzero_idx))
 
-    nonzero_tup = ([ ni[0] for ni in sorted(nonzero_idx) ],
-                   [ ni[1] for ni in sorted(nonzero_idx) ])
+    sorted_nonzero_idx = sorted(nonzero_idx)
+    nonzero_tup = ([ ni[0] for ni in sorted_nonzero_idx ],
+                   [ ni[1] for ni in sorted_nonzero_idx ])
     Xs_dimred = [
         X[nonzero_tup].A.flatten()
         for X in Xs
     ]
-
-    #srp = SparseRandomProjection(
-    #    eps=0.1, random_state=69
-    #).fit(ss.csr_matrix((len(Xs), n_correlations)))
-    #
-    #Xs_dimred = Parallel(n_jobs=20, backend='multiprocessing') (
-    #    delayed(srp_worker)(X, srp, triu_idx)
-    #    for X in Xs
-    #)
 
     # Change from lexicographic ordering to numeric.
     ordered = [ node_idxs.index(i) for i in sorted(node_idxs) ]
@@ -118,65 +114,14 @@ if __name__ == '__main__':
 
     X_dimred = np.vstack(Xs_dimred)
 
-    print(X_dimred.shape)
+    tprint(X_dimred.shape)
 
     adata = AnnData(X=X_dimred)
-    adata.obs['age'] = ages
-    sc.pp.neighbors(adata, n_neighbors=40, use_rep='X')
+    adata.obs['age'] = [ age if age >= 0 else 19 for age in ages ]
+    sc.tl.pca(adata, n_comps=100, svd_solver='randomized')
+    sc.pp.neighbors(adata, n_neighbors=20)
 
     draw_graph(adata, layout='fa')
-    #argsort = np.argsort(adata.obsm['X_draw_graph_fa'][:, 0])[:6]
-    #mean_pos = np.mean(adata.obsm['X_draw_graph_fa'][:, 0])
-    #adata.obsm['X_draw_graph_fa'][argsort, 0] = mean_pos
-    #argsort = np.argsort(-adata.obsm['X_draw_graph_fa'][:, 1])[:20]
-    #adata.obsm['X_draw_graph_fa'][argsort, 0] = mean_pos
-    #adata.obsm['X_draw_graph_fa'][argsort, 1] *= 0.7
-
-    print('pseudotime')
-    sc.tl.diffmap(adata)
-    adata.uns['iroot'] = np.flatnonzero(adata.obs['age'] < 9.6)[0]
-    sc.tl.dpt(adata)
-    adata.obs['dpt_pseudotime'][adata.obs['dpt_pseudotime'] > 0.19] = 0.19
-    print(pearsonr(adata.obs['dpt_pseudotime'], adata.obs['age']))
-    print(spearmanr(adata.obs['dpt_pseudotime'], adata.obs['age']))
-
-    plt.figure()
-    sns.lmplot('age', 'dpt_pseudotime', adata.obs, ci=99)
-    plt.savefig('pseudo_age.svg')
-
-    ax = sc.pl.draw_graph(
-        adata, color='dpt_pseudotime', edges=True, edges_color='#CCCCCC',
-        color_map='inferno', show=False,
-    )
-    savefig('figures/draw_graph_fa_{}_cluster_trajectory_dpt.png'
-            .format(NAMESPACE), ax)
-
-    if VIZ_CORR_PSEUDOTIME:
-        tprint('Diffusion pseudotime analysis...')
-
-        pair2corr = {}
-        assert(len(gene_pairs) == X_dimred.shape[1])
-        for pair_idx, pair in enumerate(gene_pairs):
-            pair2corr[pair] = pearsonr(
-                X_dimred[:, pair_idx], adata.obs['dpt_pseudotime']
-            )[0]
-        for pair, corr in sorted(
-                pair2corr.items(), key=lambda kv: -abs(kv[1])
-        ):
-            print('{}\t{}\t{}'.format(pair[0], pair[1], corr))
-
-            if pair == ('FOS', 'FOS') or pair == ('PTGDS', 'PTGDS') or \
-               pair == ('LOXL2', 'LOXL2') or pair == ('LHX1', 'LHX1') or \
-               pair == ('EOMES', 'EOMES'):
-                pair_name = '_'.join(pair)
-                pair_idx = gene_pairs.index(pair)
-                adata.obs[pair_name] = X_dimred[:, pair_idx]
-                ax = sc.pl.draw_graph(
-                    adata, color=pair_name, edges=True, edges_color='#CCCCCC',
-                    show=False, color_map='coolwarm',
-                )
-                savefig('figures/draw_graph_fa_{}_pair_{}.png'
-                        .format(NAMESPACE, pair_name), ax)
 
     if VIZ_SPARSITY:
         tprint('Plot sparsity...')
@@ -216,37 +161,6 @@ if __name__ == '__main__':
             savefig('figures/draw_graph_fa_{}_cluster_trajectory_{}.png'
                     .format(NAMESPACE, study), ax)
 
-    if VIZ_DICT_LEARN:
-        tprint('Dictionary learning...')
-
-        dl = DictionaryLearning(
-            n_components=N_COMPONENTS,
-            alpha=0.1,
-            max_iter=100,
-            tol=1e-8,
-            fit_algorithm='lars',
-            transform_algorithm='lasso_lars',
-            n_jobs=20,
-            verbose=2,
-            split_sign=False,
-            random_state=69,
-            positive_code=True,
-            positive_dict=True,
-        )
-        weights = dl.fit_transform(adata.X)
-
-        for comp in range(N_COMPONENTS):
-            comp_name = 'dict_entry_{}'.format(comp)
-            adata.obs[comp_name] = weights[:, comp]
-            ax = sc.pl.draw_graph(
-                adata, color=comp_name, edges=True, edges_color='#CCCCCC',
-                show=False, color_map='plasma',
-            )
-            savefig('figures/draw_graph_fa_{}_cluster_trajectory_dict{}.png'
-                    .format(NAMESPACE, comp), ax)
-            np.savetxt('{}/dictw{}.txt'.format(dirname, comp),
-                       dl.components_[comp])
-
     if VIZ_AGE:
         tprint('Visualize age...')
 
@@ -258,8 +172,8 @@ if __name__ == '__main__':
                 .format(NAMESPACE), ax)
 
         if VIZ_KNN:
-            for knn in [ 15, 20, 30, 40, 50 ]:
-                sc.pp.neighbors(adata, n_neighbors=knn, use_rep='X')
+            for knn in [ 8, 10, 13, 15, 20, 30, 40, 50 ]:
+                sc.pp.neighbors(adata, n_neighbors=knn)
                 draw_graph(adata, layout='fa')
                 ax = sc.pl.draw_graph(
                     adata, color='age', edges=True, edges_color='#CCCCCC',
@@ -267,3 +181,39 @@ if __name__ == '__main__':
                 )
                 savefig('figures/draw_graph_fa_{}_cluster_trajectory_age_k{}.png'
                         .format(NAMESPACE, knn), ax)
+
+    if VIZ_CORR_PSEUDOTIME:
+        sc.pp.neighbors(adata, n_neighbors=20)
+
+        draw_graph(adata, layout='fa')
+
+        tprint('Diffusion pseudotime analysis...')
+
+        tprint('pseudotime')
+        sc.tl.diffmap(adata)
+        adata.uns['iroot'] = np.flatnonzero(adata.obs['age'] < 14.6)[0]
+        sc.tl.dpt(adata)
+        finite_idx = np.isfinite(adata.obs['dpt_pseudotime'])
+        tprint(pearsonr(adata.obs['dpt_pseudotime'][finite_idx],
+                        adata.obs['age'][finite_idx]))
+        tprint(spearmanr(adata.obs['dpt_pseudotime'][finite_idx],
+                         adata.obs['age'][finite_idx]))
+
+        ax = sc.pl.draw_graph(
+            adata, color='dpt_pseudotime', edges=True, edges_color='#CCCCCC',
+            color_map='inferno', show=False,
+        )
+        savefig('figures/draw_graph_fa_{}_cluster_trajectory_dpt.png'
+                .format(NAMESPACE), ax)
+
+        pair2corr = {}
+        assert(len(gene_pairs) == X_dimred.shape[1])
+        for pair_idx, pair in enumerate(gene_pairs):
+            pair2corr[pair] = pearsonr(
+                X_dimred[finite_idx, pair_idx],
+                adata.obs['dpt_pseudotime'][finite_idx]
+            )[0]
+        for pair, corr in sorted(
+                pair2corr.items(), key=lambda kv: -abs(kv[1])
+        ):
+            print('{}\t{}\t{}'.format(pair[0], pair[1], corr))

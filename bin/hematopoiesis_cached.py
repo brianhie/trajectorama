@@ -9,28 +9,26 @@ import seaborn as sns
 from sklearn.random_projection import GaussianRandomProjection
 from sklearn.random_projection import SparseRandomProjection
 
-from dict_learning import DictionaryLearning
 from draw_graph import draw_graph
-from spddl import CovarianceDictionary
 from utils import *
 
-NAMESPACE = 'hematopoiesis_pearson_louvain'
+NAMESPACE = 'hematopoiesis_spearman_louvain'
 
 N_COMPONENTS = 15
 INIT = 'eigen'
 
-VIZ_CELL_TYPES = True
-VIZ_LOUVAIN = True
-VIZ_SPARSITY = True
-VIZ_STUDY = True
+VIZ_CELL_TYPES = False
+VIZ_LOUVAIN = False
+VIZ_SPARSITY = False
+VIZ_STUDY = False
 VIZ_DICT_LEARN = True
-VIZ_CORR_COMP = True
+VIZ_CORR_COMP = False
 
 def srp_worker(X, srp, triu_idx):
     return srp.transform(np.abs(X.toarray())[triu_idx].reshape(1, -1))[0]
 
 def savefig(fname, ax):
-    ratio = 0.4
+    ratio = 1.
     xmin, xmax = ax.get_xlim()
     ymin, ymax = ax.get_ylim()
     ax.set_aspect(abs((xmax - xmin) / (ymax - ymin)) * ratio)
@@ -65,11 +63,6 @@ if __name__ == '__main__':
 
         X = ss.load_npz(dirname + '/' + fname)
 
-        sparse_cutoff = 10000
-        if len(X.data) > sparse_cutoff:
-            cutoff = sorted(-abs(X).data)[sparse_cutoff - 1]
-            X[abs(X) < cutoff] = 0
-
         Xs.append(X)
         node_idxs.append(int(fields[1]))
         node_sizes.append(int(fields[3]))
@@ -79,34 +72,7 @@ if __name__ == '__main__':
 
         if sparsity > np.log10(10000):
             continue
-
-        #print('nonzero: {}'.format(X.count_nonzero()))
-
-        #nonzero_idx = set([ (i, i) for i in range(X.shape[0]) ])
-
         nonzero_idx |= set([ (r, c) for r, c in zip(*X.nonzero()) ])
-
-    print(10 ** np.mean(sparsities))
-    print(10 ** np.median(sparsities))
-    print(10 ** np.percentile(sparsities, 95))
-    print(10 ** np.percentile(sparsities, 99))
-    print(10 ** np.percentile(sparsities, 99.9))
-    print(10 ** max(sparsities))
-
-    #X_full = ss.load_npz(dirname + '/full_X.npz')
-    #
-    #highlight = np.zeros(X_full.shape[0])
-    #highlight[sorted(dense_idx)] = 1
-    #
-    #adata = AnnData(X=X_full)
-    #adata.obs['highlight'] = highlight
-    #sc.pp.neighbors(adata)
-    #sc.tl.umap(adata)
-    #sc.pl.scatter(
-    #    adata, color='highlight', basis='umap',
-    #    save='_{}_highlight_dense_all.png'.format(NAMESPACE)
-    #)
-    #exit()
 
     n_features = Xs[0].shape[0]
     n_correlations = int(comb(n_features, 2) + n_features)
@@ -120,17 +86,6 @@ if __name__ == '__main__':
         X[nonzero_tup].A.flatten()
         for X in Xs
     ]
-
-    #analyze_dense(Xs, Xs_dimred, sparsities, node_sizes)
-
-    #srp = SparseRandomProjection(
-    #    eps=0.1, random_state=69
-    #).fit(ss.csr_matrix((len(Xs), n_correlations)))
-    #
-    #Xs_dimred = Parallel(n_jobs=20, backend='multiprocessing') (
-    #    delayed(srp_worker)(X, srp, triu_idx)
-    #    for X in Xs
-    #)
 
     # Change from lexicographic ordering to numeric.
     ordered = [ node_idxs.index(i) for i in sorted(node_idxs) ]
@@ -169,8 +124,10 @@ if __name__ == '__main__':
                 comps.append(pcts + [ cd4, cd8 ])
             comps = np.array(comps)
 
-        sc.pp.neighbors(adata, n_neighbors=30, use_rep='X')
+        sc.pp.neighbors(adata, n_neighbors=20, use_rep='X')
         draw_graph(adata, layout='fa')
+        argsort = np.argsort(adata.obsm['X_draw_graph_fa'][:, 1])[:7]
+        adata.obsm['X_draw_graph_fa'][argsort, 1] *= 0.7
 
         for idx, cell_type in enumerate(uniq_cell_types + [
                 'human_pbmc_zheng_CD4+', 'human_pbmc_zheng_CD8+'
@@ -178,28 +135,10 @@ if __name__ == '__main__':
             adata.obs[cell_type] = comps[:, idx]
             ax = sc.pl.draw_graph(
                 adata, color=cell_type, edges=True, edges_color='#CCCCCC',
-                show=False, vmin=0, vmax=1
+                show=False, vmin=0, vmax=1, color_map='Blues',
             )
             savefig('figures/draw_graph_fa_{}_cell_type_{}.png'
                     .format(NAMESPACE, cell_type), ax)
-        exit()
-
-        max_cell_types = [
-            uniq_cell_types[np.argmax(comps[i])]
-            for i in range(adata.X.shape[0])
-        ]
-        adata.obs['max_cell_type'] = max_cell_types
-
-        for knn in [ 15, 20, 30, 40 ]:
-            sc.pp.neighbors(adata, n_neighbors=knn, use_rep='X')
-
-            draw_graph(adata, layout='fa')
-            ax = sc.pl.draw_graph(
-                adata, color='max_cell_type', edges=True, edges_color='#CCCCCC',
-                show=False,
-            )
-            savefig('figures/draw_graph_fa_{}_cell_type_max_k{}.png'
-                    .format(NAMESPACE, knn), ax)
 
     if VIZ_STUDY:
         adata.obs['study'] = studies
@@ -208,6 +147,9 @@ if __name__ == '__main__':
             sc.pp.neighbors(adata, n_neighbors=knn, use_rep='X')
 
             draw_graph(adata, layout='fa')
+            argsort = np.argsort(adata.obsm['X_draw_graph_fa'][:, 1])[:7]
+            adata.obsm['X_draw_graph_fa'][argsort, 1] *= 0.7
+
             ax = sc.pl.draw_graph(
                 adata, color='study', edges=True, edges_color='#CCCCCC',
                 show=False,
@@ -215,14 +157,11 @@ if __name__ == '__main__':
             savefig('figures/draw_graph_fa_{}_cluster_trajectory_study_k{}.png'
                     .format(NAMESPACE, knn), ax)
 
-            #sc.tl.umap(adata, min_dist=0.25)
-            #sc.pl.scatter(
-            #    adata, color='study', basis='umap',
-            #    save='_{}_umap_study_k{}.png'.format(NAMESPACE, knn)
-            #)
 
-        sc.pp.neighbors(adata, n_neighbors=30, use_rep='X')
+        sc.pp.neighbors(adata, n_neighbors=20, use_rep='X')
         draw_graph(adata, layout='fa')
+        argsort = np.argsort(adata.obsm['X_draw_graph_fa'][:, 1])[:7]
+        adata.obsm['X_draw_graph_fa'][argsort, 1] *= 0.7
         sc.tl.umap(adata)
         for study in sorted(set(studies)):
             adata.obs[study] = studies == study
@@ -260,7 +199,7 @@ if __name__ == '__main__':
         adata.obs['sparsity'] = sparsities
         adata.obs['sizes'] = np.log10(node_sizes)
 
-        sc.pp.neighbors(adata, n_neighbors=30, use_rep='X')
+        sc.pp.neighbors(adata, n_neighbors=20, use_rep='X')
         draw_graph(adata, layout='fa')
         sc.tl.umap(adata)
 
@@ -286,8 +225,10 @@ if __name__ == '__main__':
         )
 
     if VIZ_DICT_LEARN:
-        sc.pp.neighbors(adata, n_neighbors=30, use_rep='X')
+        sc.pp.neighbors(adata, n_neighbors=20, use_rep='X')
         draw_graph(adata, layout='fa')
+        argsort = np.argsort(adata.obsm['X_draw_graph_fa'][:, 1])[:7]
+        adata.obsm['X_draw_graph_fa'][argsort, 1] *= 0.7
         sc.tl.umap(adata)
 
         dl = DictionaryLearning(
@@ -315,7 +256,7 @@ if __name__ == '__main__':
                        dl.components_[comp])
             ax = sc.pl.draw_graph(
                 adata, color=comp_name, edges=True, edges_color='#CCCCCC',
-                show=False,
+                show=False, color_map='plasma',
             )
             savefig('figures/draw_graph_fa_{}_cluster_trajectory_dict{}.png'
                     .format(NAMESPACE, comp), ax)
@@ -325,19 +266,26 @@ if __name__ == '__main__':
             )
 
         adata.obs['dict_entry_eryth'] = (
+            weights[:, 0] +
             weights[:, 1] +
             weights[:, 2] +
-            weights[:, 6] +
-            weights[:, 7] +
+            weights[:, 3] +
             weights[:, 8] +
-            weights[:, 10]
+            weights[:, 9] +
+            weights[:, 10] +
+            weights[:, 11] +
+            weights[:, 12] +
+            weights[:, 14]
         )
         ax = sc.pl.draw_graph(
             adata, color='dict_entry_eryth', edges=True,
-            edges_color='#CCCCCC', show=False,
+            edges_color='#CCCCCC', show=False, color_map='plasma',
         )
         savefig('figures/draw_graph_fa_{}_cluster_trajectory_dict{}.png'
                 .format(NAMESPACE, 'eryth'), ax)
+        eryth = dl.components_[[0, 1, 2, 3, 8, 9, 10, 11, 12, 14], :]
+        np.savetxt('{}/dictw{}.txt'.format(dirname, 'eryth'),
+                   np.median(eryth, 0))
 
     if VIZ_CORR_COMP:
         weights = np.loadtxt('{}/weights.txt'.format(dirname))

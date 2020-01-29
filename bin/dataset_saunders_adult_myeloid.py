@@ -9,7 +9,7 @@ from sklearn.preprocessing import normalize
 from process import process, load_names, merge_datasets
 from utils import *
 
-NAMESPACE = 'saunders_adult_brain'
+NAMESPACE = 'saunders_adult_myeloid'
 DIMRED = 100
 DR_METHOD = 'svd'
 
@@ -55,6 +55,7 @@ def keep_valid(datasets):
             sub_type_common[fields[-1]] = fields[4].replace(' ', '_')
 
     sub_types = []
+    injured = []
 
     for i in range(len(datasets)):
         valid_idx = []
@@ -75,6 +76,7 @@ def keep_valid(datasets):
                         else:
                             sub_types.append('NA')
                             assert('-' not in sub_type)
+                        injured.append(False)
                         qc_idx.append(n_valid)
                     n_valid += 1
                 n_lines += 1
@@ -89,10 +91,10 @@ def keep_valid(datasets):
     tprint('Found {} cells among all datasets'.format(n_valid))
     tprint('Found {} valid cells among all datasets'.format(len(qc_idx)))
 
-    return qc_idx, np.array(sub_types)
+    return qc_idx, np.array(sub_types), np.array(injured)
 
 datasets, genes_list, n_cells = load_names(data_names, norm=False)
-qc_idx, sub_types = keep_valid(datasets)
+qc_idx, sub_types, injured = keep_valid(datasets)
 datasets, genes = merge_datasets(datasets, genes_list)
 
 X = vstack(datasets)
@@ -106,11 +108,14 @@ cell_types = cell_types[qc_idx]
 
 ages = np.array([ 21 ] * X.shape[0])
 
-neuron_idx = cell_types == 'Neuron'
-X = X[neuron_idx]
-cell_types = cell_types[neuron_idx]
-sub_types = sub_types[neuron_idx]
-ages = ages[neuron_idx]
+myeloid_idx = np.logical_or(
+    cell_types == 'Macrophage', cell_types == 'Microglia'
+)
+X = X[myeloid_idx]
+cell_types = cell_types[myeloid_idx]
+sub_types = sub_types[myeloid_idx]
+ages = ages[myeloid_idx]
+injured = injured[myeloid_idx]
 
 if not os.path.isfile('data/dimred/{}_{}.txt'
                       .format(DR_METHOD, NAMESPACE)):
@@ -129,5 +134,6 @@ dataset.var['gene_symbols'] = genes
 dataset.obs['cell_types'] = [ NAMESPACE + '_' + l for l in cell_types ]
 dataset.obs['sub_types'] = [ NAMESPACE + '_' + l for l in sub_types ]
 dataset.obs['ages'] = ages
+dataset.obs['injured'] = injured
 datasets = [ dataset ]
 namespaces = [ NAMESPACE ]
