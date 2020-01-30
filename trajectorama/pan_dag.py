@@ -8,8 +8,8 @@ import sys
 import uuid
 import warnings
 
-from _louvain import louvain
-from utils import *
+from ._louvain import louvain
+from .utils import *
 
 def louvain_worker(X, resolution):
     log_uuid = str(uuid.uuid4())
@@ -27,7 +27,7 @@ def louvain_worker(X, resolution):
 class PanDAG(object):
     def __init__(
             self,
-            dag_method='agg_ward',
+            dag_method='louvain',
             sketch_size='auto',
             sketch_method='auto',
             reduce_dim=None,
@@ -129,7 +129,7 @@ class PanDAG(object):
         """
         n_samples = X.shape[0]
 
-        if self.verbose:
+        if self.verbose > 1:
             tprint('Sketching...')
 
         if self.sketch_method == 'geometric':
@@ -302,7 +302,9 @@ class PanDAG(object):
         if features is None:
             self.features = np.array(range(X.shape[1]))
 
-        if self.reduce_dim is not None:
+        if self.reduce_dim is None:
+            X_ = X
+        else:
             if issubclass(type(self.reduce_dim), np.ndarray):
                 X_ = self.reduce_dim
             elif isinstance(self.reduce_dim, int):
@@ -310,12 +312,10 @@ class PanDAG(object):
             else:
                 raise ValueError('`reduce_dim` has invalid type {}'
                                  .format(type(self.reduce_dim)))
-        else:
-            X_ = X
 
         X_ = self.check_and_sketch(X_)
 
-        if self.verbose:
+        if self.verbose > 1:
             tprint('Constructing DAG...')
 
         if self.dag_method == 'agg_ward':
