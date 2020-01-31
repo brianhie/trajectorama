@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import random
+from scipy.sparse import csr_matrix
 from sklearn.preprocessing import normalize
 import warnings
 
@@ -90,6 +91,8 @@ def transform(
         random.seed(seed)
         os.environ['PYTHONHASHSEED'] = str(seed)
 
+    X = _check_X(X)
+
     _check_params(X, studies, X_dimred, corr_method, corr_cutoff,
                   cluster_method, min_cluster_samples, n_jobs)
 
@@ -148,6 +151,21 @@ def transform(
         tprint('Finished with Trajectorama transformation.')
 
     return Xs_coexpr, sample_idxs
+
+def _check_X(X):
+    """
+    Use sparse matrices to handle gene expression data.
+    """
+    if issubclass(type(X), np.ndarray):
+        X = csr_matrix(X)
+    elif issubclass(type(X), scipy.sparse.csr.csr_matrix):
+        X = X
+    else:
+        sys.stderr.write('ERROR: Data sets must be numpy array or '
+                         'scipy.sparse.csr_matrix, received type '
+                         '{}.\n'.format(type(ds)))
+        exit(1)
+    return X
 
 def _check_params(X, studies, X_dimred, corr_method, corr_cutoff,
                  cluster_method, min_cluster_samples, n_jobs):

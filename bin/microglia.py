@@ -3,6 +3,7 @@ import pandas as pd
 from scipy.sparse import vstack
 from sklearn.metrics import pairwise_distances
 import sys
+import trajectorama
 
 from process import merge_datasets
 from subtypes_zeisel_saunders import (
