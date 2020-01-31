@@ -138,6 +138,6 @@ python bin/microglia.py > microglia.log
 python bin/microglia_cached.py >> microglia.log
 ```
 
-### Questions
+## Questions
 
 Create an issue in the repository or contact brianhie@mit.edu for any pertinent questions or concerns. We will do our best to answer promptly and feel free to create a pull request and contribute!
