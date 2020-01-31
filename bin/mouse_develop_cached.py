@@ -12,7 +12,7 @@ from sklearn.random_projection import SparseRandomProjection
 from draw_graph import draw_graph
 from utils import *
 
-NAMESPACE = 'mouse_develop_spearman_louvain'
+NAMESPACE = 'mouse_develop'
 
 N_COMPONENTS = 15
 INIT = 'eigen'

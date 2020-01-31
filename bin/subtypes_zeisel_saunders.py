@@ -6,7 +6,7 @@ import seaborn as sns
 from sklearn.metrics import pairwise_distances
 import sys
 
-from pan_corr import pearson_multi, spearman_multi
+from trajectorama import pearson_multi, spearman_multi
 from process import merge_datasets
 from utils import *
 

@@ -9,7 +9,7 @@ from draw_graph import draw_graph
 from process import merge_datasets
 from utils import *
 
-NAMESPACE = 'mouse_develop_test'
+NAMESPACE = 'mouse_develop'
 
 def import_data():
     all_datasets, all_namespaces, all_dimreds = [], [], []
@@ -53,8 +53,7 @@ def correct_scanorama(Xs, genes):
     X = vstack(Xs)
     return X
 
-def correct_harmony(Xs, genes, n_pcs=50):
-    from fbpca import pca
+def correct_harmony(X_dimreds):
     from subprocess import Popen
 
     dirname = 'target/harmony'
@@ -63,14 +62,12 @@ def correct_harmony(Xs, genes, n_pcs=50):
     embed_fname = '{}/embedding.txt'.format(dirname)
     label_fname = '{}/labels.txt'.format(dirname)
 
-    X = vstack(Xs)
-    U, s, _ = pca(X, k=n_pcs)
-    X_dimred = U * s
+    X_dimred = np.concatenate(X_dimreds)
     np.savetxt(embed_fname, X_dimred)
 
     labels = []
     curr_label = 0
-    for i, a in enumerate(Xs):
+    for i, a in enumerate(X_dimreds):
         labels += list(np.zeros(a.shape[0]) + curr_label)
         curr_label += 1
     labels = np.array(labels, dtype=int)
@@ -183,20 +180,21 @@ if __name__ == '__main__':
         log_transform=False,
         corr_cutoff=0.7,
         corr_method='spearman',
-        dag_method='louvain',
-        min_cluster_cells=500,
+        cluster_method='louvain',
+        min_cluster_samples=500,
         n_jobs=1,
         verbose=2,
     )
 
-    # Save to files for additional analysis
+    # Save to files for additional analysis.
 
     with open('{}/genes.txt'.format(dirname), 'w') as of:
         [ of.write('{}\n'.format(gene)) for gene in genes ]
 
     with open('{}/cluster_studies.txt'.format(dirname), 'w') as of:
+        of.write('mouse_develop\n')
         [ of.write('{}\n'.format(set(studies[sample_idx]).pop()))
-          for sample_idx in sample_idxs ]
+          for sample_idx in sample_idxs[1:] ]
 
     tprint('Saving coexpression matrices to "{}" directory...'
            .format(dirname))
@@ -213,7 +211,7 @@ if __name__ == '__main__':
     expr_type = 'uncorrected'
 
     if expr_type == 'harmony':
-        X = correct_harmony(Xs, genes)
+        X = correct_harmony(all_dimreds)
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)
     if expr_type == 'scvi':
@@ -222,18 +220,14 @@ if __name__ == '__main__':
         X[np.isinf(X)] = 0
 
     C = np.vstack([
-        X[node.sample_idx].mean(0)
-        for node in ct.nodes
-        if node.n_leaves >= ct.min_leaves
+        X[sample_idx].mean(0) for sample_idx in sample_idxs
     ])
 
     np.save('data/expression_cluster_{}.npy'.format(expr_type), C)
 
     adata = AnnData(X=C)
     adata.obs['age'] = [
-        np.mean(ages[node.sample_idx])
-        for node_idx, node in enumerate(ct.nodes)
-        if node.n_leaves >= ct.min_leaves
+        np.mean(ages[sample_idx]) for sample_idx in sample_idxs
     ]
     adata.obs['study'] = studies
 
@@ -250,17 +244,11 @@ if __name__ == '__main__':
             save='_{}_expr_gmean_study_k{}.png'
             .format(NAMESPACE + '_' + expr_type, knn)
         )
-        #sc.tl.diffmap(adata)
-        #adata.uns['iroot'] = np.flatnonzero(adata.obs['age'] < 9.6)[0]
-        #sc.tl.dpt(adata)
-        #from scipy.stats import pearsonr
-        #print(pearsonr(adata.obs['dpt_pseudotime'], adata.obs['age']))
-        #sys.stdout.flush()
 
     adata = AnnData(X=X)
     adata.obs['age'] = ages
     adata.obs['study'] = [ '_'.join(ct.split('_')[:3]) for ct in cell_types ]
-    sc.pp.neighbors(adata)#, use_rep='X')
+    sc.pp.neighbors(adata)
     sc.tl.umap(adata, init_pos='random')
     sc.pl.scatter(
         adata, color='study', basis='umap',

@@ -36,7 +36,7 @@ def corr_worker(X_dag, X_positive, corr_method, i, j):
 class CorrelationDAG(PanDAG):
     def __init__(
             self,
-            dag_method='agg_ward',
+            cluster_method='agg_ward',
             corr_method='pearson',
             min_leaves=100,
             sketch_size='auto',
@@ -50,7 +50,7 @@ class CorrelationDAG(PanDAG):
         Initializes correlation DAG object.
         """
         super(CorrelationDAG, self).__init__(
-            dag_method, sketch_size, sketch_method,
+            cluster_method, sketch_size, sketch_method,
             reduce_dim, verbose
         )
 
@@ -325,7 +325,7 @@ class CorrelationDAG(PanDAG):
 
     def fit(self, X, y=None, features=None):
         """
-        Constructs DAG according to `self.dag_method` and populates
+        Constructs DAG according to `self.cluster_method` and populates
         the DAG with correlation matrices.
 
         Parameters
