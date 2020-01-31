@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import random
+import scipy
 from scipy.sparse import csr_matrix
 from sklearn.preprocessing import normalize
 import warnings
@@ -108,14 +109,15 @@ def transform(
         np.where(studies == study)[0] for study in uniq_studies
     ]
 
+    if log_transform:
+        X = X.log1p()
+
     if X_dimred is None:
         X_dimred = np.concatenate([
             reduce_dimensionality(normalize(X[study_idx]))
+            if X.shape[1] < 100 else X[study_idx].toarray()
             for study_idx in study_idxs
         ])
-
-    if log_transform:
-        X = X.log1p()
 
     # Perform panresolution clustering of studies separately.
 
@@ -161,9 +163,9 @@ def _check_X(X):
     elif issubclass(type(X), scipy.sparse.csr.csr_matrix):
         X = X
     else:
-        sys.stderr.write('ERROR: Data sets must be numpy array or '
-                         'scipy.sparse.csr_matrix, received type '
-                         '{}.\n'.format(type(ds)))
+        raise TypeError('Dataset must be numpy array or '
+                        'scipy.sparse.csr_matrix, received type '
+                        '{}.\n'.format(type(ds)))
         exit(1)
     return X
 
