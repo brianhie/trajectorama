@@ -5,7 +5,7 @@ setup(
     version='0.1',
     description='Single-cell trajectory integration',
     url='https://github.com/brianhie/trajectorama',
-    download_url='https://github.com/brianhie/geosketch/archive/v0.1-beta.tar.gz',
+    download_url='https://github.com/brianhie/trajectorama/archive/v0.1-beta.tar.gz',
     packages=find_packages(exclude=['bin', 'conf', 'data', 'target',]),
     install_requires=[
         'anndata>=0.6.22',
