@@ -1,9 +1,9 @@
 
-## Trajectorama
+# Trajectorama
 
 Trajectorama is an algorithm that implements coexpression-based integration of multi-study single-cell trajectories. Trajectorama is described in the paper ["Coexpression enables multi-study cellular trajectories of development and disease"](https://www.biorxiv.org/content/10.1101/719088v1) by Brian Hie, Hyunghoon Cho, Bryan Bryson, and Bonnie Berger.
 
-### Installation
+## Installation
 
 The most import dependency is on a [custom implementation](https://github.com/brianhie/louvain-igraph) of Louvain clustering, which can be installed with the below commands:
 ```
@@ -16,9 +16,9 @@ Installing Trajectorama can then be done by:
 python -m pip install trajectorama
 ```
 
-### API and example usage
+## API and example usage
 
-We provide a basic API that takes an expression matrix augmented with study information and returns a list of coexpression matrices, with corresponding indices into the original data:
+We provide a basic API around the core algorithm that takes an expression matrix augmented with study information and returns a list of coexpression matrices, with corresponding indices into the original data:
 ```python
 import trajectorama
 
@@ -57,7 +57,11 @@ sc.pl.draw_graph(adata)
 
 ```
 
-### Trajectorama for mouse neuronal development
+The example scripts below show more detailed usage of Trajectorama, which was used to generate the paper results.
+
+# Examples
+
+## Trajectorama for mouse neuronal development
 
 Trajectorama analyzes five large-scale studies of mouse neurons over multiple points in development.
 
