@@ -88,23 +88,6 @@ python bin/mouse_develop_dictionary.py >> mouse_develop.log
 ```
 This will log some relevant statistics and save visualizations under the `figures/` directory.
 
-
-### Trajectorama for human hematopoiesis
-
-We can perform a similar workflow for human hematopoiesis by running the commands:
-```
-# Download (if not done so for mouse data).
-wget http://trajectorama.csail.mit.edu/data.tar.gz
-tar xvf data.tar.gz
-# Preprocess.
-python bin/process.py conf/hematopoiesis.txt
-
-# Analyze.
-python bin/hematopoiesis.py > hematopoiesis.log
-python bin/hematopoiesis_cached.py >> hematopoiesis.log
-python bin/hematopoiesis_dictionary.py >> hematopoiesis.log
-```
-
 ### Trajectorama for human hematopoiesis
 
 We can perform a similar workflow for human hematopoiesis by running the commands:

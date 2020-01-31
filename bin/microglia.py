@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from scipy.sparse import vstack
+from scipy.sparse import vstack, save_npz, csr_matrix
 from sklearn.metrics import pairwise_distances
 import sys
 import trajectorama
