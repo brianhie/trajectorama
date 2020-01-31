@@ -34,7 +34,7 @@ Xs_coexpr, sample_idxs = trajectorama.transform(
 )
 ```
 
-The coexpression matrix `Xs_coexpr[i]` is defined over the subset of cells `X[sample_idxs[i], :]`.
+The coexpression matrix `Xs_coexpr[i]` is defined over the subset of cells `X[sample_idxs[i], :]`. **See the documentation string under the `transform()` function at the top of [trajectorama/trajectorama.py](trajectorama/trajectorama.py) for the full list of parameters and default values.**
 
 This list of coexpression matrices can then be used in further analysis, e.g., you can flatten the matrices and use `scanpy` to visualize the matrices as a KNN graph:
 ```python
