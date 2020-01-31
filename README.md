@@ -59,9 +59,9 @@ sc.pl.draw_graph(adata)
 
 The example scripts below show more detailed usage of Trajectorama, which was used to generate the paper results.
 
-# Examples
+## Examples
 
-## Trajectorama for mouse neuronal development
+### Trajectorama for mouse neuronal development
 
 Trajectorama analyzes five large-scale studies of mouse neurons over multiple points in development.
 
