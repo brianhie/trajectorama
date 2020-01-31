@@ -11,7 +11,7 @@ from subtypes_zeisel_saunders import (
 )
 from utils import *
 
-NAMESPACE = 'microglia_test'
+NAMESPACE = 'microglia'
 
 def import_data():
     all_datasets, all_namespaces, all_dimreds = [], [], []
