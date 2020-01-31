@@ -1,36 +1,15 @@
 from anndata import AnnData
-from matplotlib import cm
 import numpy as np
-import os
-from scanorama import process_data, plt, reduce_dimensionality, visualize
 import scanpy as sc
-from scipy.stats import spearmanr
 from scipy.sparse import vstack, save_npz, csr_matrix
-import seaborn as sns
-from sklearn.preprocessing import LabelEncoder, normalize
 import sys
+import trajectorama
 
 from draw_graph import draw_graph
-from pan_corr import PanCorrelation
-from pan_dag import PanDAG
 from process import merge_datasets
 from utils import *
 
-CORR_METHOD = 'spearman'
-DAG_METHOD = 'louvain'
-DIMRED = 100
-DR_METHOD = 'svd'
-
-REASSEMBLE_METHOD = 'louvain'
-REASSEMBLE_K = 15
-
-CORR_CUTOFF = 0.7
-RANDOM_PROJ = False
-
-NAMESPACE = 'mouse_develop_{}_{}'.format(CORR_METHOD, DAG_METHOD)
-
-if RANDOM_PROJ:
-    NAMESPACE += '_randproj'
+NAMESPACE = 'mouse_develop'
 
 def import_data():
     all_datasets, all_namespaces, all_dimreds = [], [], []
@@ -74,8 +53,7 @@ def correct_scanorama(Xs, genes):
     X = vstack(Xs)
     return X
 
-def correct_harmony(Xs, genes, n_pcs=50):
-    from fbpca import pca
+def correct_harmony(X_dimreds):
     from subprocess import Popen
 
     dirname = 'target/harmony'
@@ -84,14 +62,12 @@ def correct_harmony(Xs, genes, n_pcs=50):
     embed_fname = '{}/embedding.txt'.format(dirname)
     label_fname = '{}/labels.txt'.format(dirname)
 
-    X = vstack(Xs)
-    U, s, _ = pca(X, k=n_pcs)
-    X_dimred = U * s
+    X_dimred = np.concatenate(X_dimreds)
     np.savetxt(embed_fname, X_dimred)
 
     labels = []
     curr_label = 0
-    for i, a in enumerate(Xs):
+    for i, a in enumerate(X_dimreds):
         labels += list(np.zeros(a.shape[0]) + curr_label)
         curr_label += 1
     labels = np.array(labels, dtype=int)
@@ -157,6 +133,8 @@ if __name__ == '__main__':
 
     all_datasets, all_namespaces, all_dimreds = import_data()
 
+    # Determine highly variable genes.
+
     hv_genes = None
     for i, dataset in enumerate(all_datasets):
         genes_hvg, _ = hvg([dataset.X], dataset.var['gene_symbols'], 'dispersion')
@@ -169,7 +147,7 @@ if __name__ == '__main__':
         tprint('{}: {}'.format(all_namespaces[i], len(hv_genes)))
         sys.stdout.flush()
 
-    # Keep only those highly variable genes.
+    # Merge data and metadata.
 
     Xs, genes = merge_datasets(
         [ dataset.X for dataset in all_datasets ],
@@ -178,15 +156,8 @@ if __name__ == '__main__':
         verbose=True
     )
 
-    [ tprint(X.shape[0]) for X in Xs ]
-
     X = vstack(Xs)
     X = X.log1p()
-
-    #corr = spearmanr(X.todense())[0]
-    #corr[np.isnan(corr)] = 0.
-    #np.save('{}/full_corr.npy'.format(dirname), corr)
-    #del corr
 
     cell_types = np.concatenate(
         [ dataset.obs['cell_types'] for dataset in all_datasets ],
@@ -196,70 +167,51 @@ if __name__ == '__main__':
         [ dataset.obs['ages'] for dataset in all_datasets ],
         axis=None
     )
+    studies = np.concatenate([
+        np.array([ all_namespaces[i] ] * Xs[i].shape[0] )
+        for i in range(len(Xs))
+    ])
 
-    cds = [
-        PanDAG(
-            dag_method=DAG_METHOD,
-            reduce_dim=all_dimreds[i],
-            verbose=True,
-        ).fit(all_dimreds[i])
-        for i in range(len(all_dimreds))
-    ]
+    # Run Trajectorama clustering and featurization.
 
-    ct = PanCorrelation(
-        n_components=25,
-        min_modules=3,
-        min_leaves=500,
-        dag_method=DAG_METHOD,
-        corr_method=CORR_METHOD,
-        corr_cutoff=CORR_CUTOFF,
-        reassemble_method=REASSEMBLE_METHOD,
-        reassemble_K=REASSEMBLE_K,
-        random_projection=RANDOM_PROJ,
-        dictionary_learning=True,
+    Xs_coexpr, sample_idxs = trajectorama.transform(
+        X, studies,
+        X_dimred=np.concatenate(all_dimreds),
+        log_transform=False,
+        corr_cutoff=0.7,
+        corr_method='spearman',
+        cluster_method='louvain',
+        min_cluster_samples=500,
         n_jobs=1,
         verbose=2,
     )
 
-    studies = [ 'mouse_develop' ]
-    curr_idx = 0
-    for i, cd in enumerate(cds):
-        for node in cd.nodes:
-            node.sample_idx = np.array(node.sample_idx) + curr_idx
-            ct.nodes.append(node)
-            if node.n_leaves >= ct.min_leaves:
-                studies.append(
-                    all_namespaces[i]
-                    if not all_namespaces[i].startswith('mca')
-                    else 'mca_han'
-                )
-        curr_idx += all_dimreds[i].shape[0]
-        tprint(all_dimreds[i].shape[0])
+    # Save to files for additional analysis.
 
     with open('{}/genes.txt'.format(dirname), 'w') as of:
         [ of.write('{}\n'.format(gene)) for gene in genes ]
 
     with open('{}/cluster_studies.txt'.format(dirname), 'w') as of:
-        [ of.write('{}\n'.format(study)) for study in studies ]
+        of.write('mouse_develop\n')
+        [ of.write('{}\n'.format(set(studies[sample_idx]).pop()))
+          for sample_idx in sample_idxs[1:] ]
 
-    ct.sample_idx = list(range(X.shape[0]))
-    ct.n_leaves = X.shape[0]
-    ct.fill_correlations(X)
-
-    for node_idx, node in enumerate(ct.nodes):
-        if node.n_leaves < ct.min_leaves:
-            continue
-        avg_age = np.mean(ages[node.sample_idx])
-        save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'.format(
-            dirname, node_idx, avg_age, node.n_leaves
-        ), csr_matrix(node.correlations))
-
+    tprint('Saving coexpression matrices to "{}" directory...'
+           .format(dirname))
+    for node_idx, (X_coexpr, sample_idx) in enumerate(zip(Xs_coexpr, sample_idxs)):
+        age = np.mean(ages[sample_idx])
+        n_cells = len(sample_idx)
+        save_npz('{}/node_{}_at_{}_has_{}_leaves.npz'
+                 .format(dirname, node_idx, age, n_cells),
+                 csr_matrix(X_coexpr))
     exit()
 
-    expr_type = 'harmony'
+    # Benchmarking code.
+
+    expr_type = 'uncorrected'
 
     if expr_type == 'harmony':
-        X = correct_harmony(Xs, genes)
+        X = correct_harmony(all_dimreds)
     if expr_type == 'scanorama':
         X = correct_scanorama(Xs, genes)
     if expr_type == 'scvi':
@@ -268,18 +220,14 @@ if __name__ == '__main__':
         X[np.isinf(X)] = 0
 
     C = np.vstack([
-        X[node.sample_idx].mean(0)
-        for node in ct.nodes
-        if node.n_leaves >= ct.min_leaves
+        X[sample_idx].mean(0) for sample_idx in sample_idxs
     ])
 
     np.save('data/expression_cluster_{}.npy'.format(expr_type), C)
 
     adata = AnnData(X=C)
     adata.obs['age'] = [
-        np.mean(ages[node.sample_idx])
-        for node_idx, node in enumerate(ct.nodes)
-        if node.n_leaves >= ct.min_leaves
+        np.mean(ages[sample_idx]) for sample_idx in sample_idxs
     ]
     adata.obs['study'] = studies
 
@@ -296,17 +244,11 @@ if __name__ == '__main__':
             save='_{}_expr_gmean_study_k{}.png'
             .format(NAMESPACE + '_' + expr_type, knn)
         )
-        #sc.tl.diffmap(adata)
-        #adata.uns['iroot'] = np.flatnonzero(adata.obs['age'] < 9.6)[0]
-        #sc.tl.dpt(adata)
-        #from scipy.stats import pearsonr
-        #print(pearsonr(adata.obs['dpt_pseudotime'], adata.obs['age']))
-        #sys.stdout.flush()
 
     adata = AnnData(X=X)
     adata.obs['age'] = ages
     adata.obs['study'] = [ '_'.join(ct.split('_')[:3]) for ct in cell_types ]
-    sc.pp.neighbors(adata)#, use_rep='X')
+    sc.pp.neighbors(adata)
     sc.tl.umap(adata, init_pos='random')
     sc.pl.scatter(
         adata, color='study', basis='umap',

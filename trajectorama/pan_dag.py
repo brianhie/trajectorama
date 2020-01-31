@@ -8,8 +8,8 @@ import sys
 import uuid
 import warnings
 
-from _louvain import louvain
-from utils import *
+from ._louvain import louvain
+from .utils import *
 
 def louvain_worker(X, resolution):
     log_uuid = str(uuid.uuid4())
@@ -27,7 +27,7 @@ def louvain_worker(X, resolution):
 class PanDAG(object):
     def __init__(
             self,
-            dag_method='agg_ward',
+            cluster_method='louvain',
             sketch_size='auto',
             sketch_method='auto',
             reduce_dim=None,
@@ -36,7 +36,7 @@ class PanDAG(object):
         """
         Initializes pan clustering DAG object.
         """
-        self.dag_method = dag_method
+        self.cluster_method = cluster_method
         self.sketch_size = sketch_size
         self.sketch_method = sketch_method
         self.sketch_neighbors = None
@@ -78,7 +78,7 @@ class PanDAG(object):
         if self.sketch_size == 'auto':
             # Agglomerative clustering does not scale well beyond 5000
             # samples.
-            if self.dag_method == 'agg_ward':
+            if self.cluster_method == 'agg_ward':
                 if n_samples > 5000:
                     self.sketch_size = 5000
                     if self.sketch_method == 'auto':
@@ -87,7 +87,7 @@ class PanDAG(object):
                     return X
 
             # Louvain clustering can tolerate much larger datasets.
-            elif self.dag_method == 'louvain':
+            elif self.cluster_method == 'louvain':
                 if n_samples > 1000000:
                     self.sketch_size = 1000000
                     if self.sketch_method == 'auto':
@@ -129,7 +129,7 @@ class PanDAG(object):
         """
         n_samples = X.shape[0]
 
-        if self.verbose:
+        if self.verbose > 1:
             tprint('Sketching...')
 
         if self.sketch_method == 'geometric':
@@ -287,7 +287,7 @@ class PanDAG(object):
 
     def fit(self, X, y=None, features=None):
         """
-        Constructs DAG according to `self.dag_method`.
+        Constructs DAG according to `self.cluster_method`.
 
         Parameters
         ----------
@@ -302,7 +302,9 @@ class PanDAG(object):
         if features is None:
             self.features = np.array(range(X.shape[1]))
 
-        if self.reduce_dim is not None:
+        if self.reduce_dim is None:
+            X_ = X
+        else:
             if issubclass(type(self.reduce_dim), np.ndarray):
                 X_ = self.reduce_dim
             elif isinstance(self.reduce_dim, int):
@@ -310,15 +312,13 @@ class PanDAG(object):
             else:
                 raise ValueError('`reduce_dim` has invalid type {}'
                                  .format(type(self.reduce_dim)))
-        else:
-            X_ = X
 
         X_ = self.check_and_sketch(X_)
 
-        if self.verbose:
+        if self.verbose > 1:
             tprint('Constructing DAG...')
 
-        if self.dag_method == 'agg_ward':
+        if self.cluster_method == 'agg_ward':
             from sklearn.cluster.hierarchical import ward_tree
 
             ret = ward_tree(X_, n_clusters=None, return_distance=True)
@@ -327,12 +327,12 @@ class PanDAG(object):
 
             self.create_dag_agg(children, X_.shape[0])
 
-        elif self.dag_method == 'louvain':
+        elif self.cluster_method == 'louvain':
             self.create_dag_louvain(X_)
 
         else:
             raise ValueError('Invalid DAG construction method {}'
-                             .format(self.dag_method))
+                             .format(self.cluster_method))
 
         if len(self.sample_idx) != X.shape[0]:
             warnings.warn('Some samples have been orphaned during '

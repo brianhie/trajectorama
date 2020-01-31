@@ -163,7 +163,7 @@ def print_gene_modules(corr, genes):
         ]))
 
 def visualize_dictionary(ct, X_dimred, genes, cell_types,
-                         namespace, dag_method, verbose=True):
+                         namespace, cluster_method, verbose=True):
     from anndata import AnnData
     from scanorama import visualize
     import scanpy as sc
@@ -189,7 +189,7 @@ def visualize_dictionary(ct, X_dimred, genes, cell_types,
     cell_types_int = le.transform(cell_types)
     visualize(
         None, cell_types_int,
-        '{}_pan_umap_{}_type'.format(namespace, dag_method),
+        '{}_pan_umap_{}_type'.format(namespace, cluster_method),
         np.array(sorted(set(cell_types))),
         embedding=embedding,
         image_suffix='.png'
@@ -212,14 +212,14 @@ def visualize_dictionary(ct, X_dimred, genes, cell_types,
         plt.scatter(embedding[:, 0], embedding[:, 1],
                     c=intensity, cmap=cm.get_cmap('Blues'), s=1)
         plt.savefig('{}_pan_umap_{}_cluster{}.png'
-                    .format(namespace, dag_method, c_idx), dpi=500)
+                    .format(namespace, cluster_method, c_idx), dpi=500)
 
 
         plt.figure()
         plt.title('Cluster {}'.format(c_idx))
         plt.hist(intensity.flatten(), bins=100)
         plt.savefig('{}_pan_umap_{}_intensehist{}.png'
-                    .format(namespace, dag_method, c_idx), dpi=500)
+                    .format(namespace, cluster_method, c_idx), dpi=500)
 
         intensity = (intensity > 0.8) * 1
 
@@ -228,7 +228,7 @@ def visualize_dictionary(ct, X_dimred, genes, cell_types,
         plt.scatter(embedding[:, 0], embedding[:, 1],
                     c=intensity, cmap=cm.get_cmap('Blues'), s=1)
         plt.savefig('{}_pan_umap_{}_member{}.png'
-                    .format(namespace, dag_method, c_idx), dpi=500)
+                    .format(namespace, cluster_method, c_idx), dpi=500)
 
     for c_idx in range(ct.labels_.shape[1]):
 
@@ -258,7 +258,7 @@ def visualize_dictionary(ct, X_dimred, genes, cell_types,
         plt.xticks(rotation=90)
         plt.yticks(rotation=90)
         plt.savefig('{}_pan_cov_{}_cluster{}.png'
-                    .format(namespace, dag_method, c_idx), dpi=500)
+                    .format(namespace, cluster_method, c_idx), dpi=500)
 
 def save_mtx(dir_name, X, genes):
     X = X.tocoo()

@@ -12,16 +12,16 @@ from sklearn.random_projection import SparseRandomProjection
 from draw_graph import draw_graph
 from utils import *
 
-NAMESPACE = 'hematopoiesis_spearman_louvain'
+NAMESPACE = 'hematopoiesis'
 
 N_COMPONENTS = 15
 INIT = 'eigen'
 
-VIZ_CELL_TYPES = False
+VIZ_CELL_TYPES = True
 VIZ_LOUVAIN = False
 VIZ_SPARSITY = False
-VIZ_STUDY = False
-VIZ_DICT_LEARN = True
+VIZ_STUDY = True
+VIZ_DICT_LEARN = False
 VIZ_CORR_COMP = False
 
 def srp_worker(X, srp, triu_idx):
