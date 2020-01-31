@@ -152,9 +152,8 @@ if __name__ == '__main__':
         X[np.isinf(X)] = 0
 
     C = np.vstack([
-        X[node.sample_idx].mean(0)
-        for node in ct.nodes
-        if node.n_leaves >= ct.min_leaves
+        X[sample_idx].mean(0)
+        sample_idx in sample_idxs
     ])
 
     adata = AnnData(X=C)
