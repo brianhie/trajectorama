@@ -76,13 +76,13 @@ To preprocess the data, run the command:
 python bin/process.py conf/mouse_develop.txt
 ```
 This preprocessing step only needs to be done once. Then, we perform panclustering and coexpression matrix computation using the command:
-```
+```bash
 python bin/mouse_develop.py > mouse_develop.log
 ```
 This will save each coexpression matrix as a `.npz` file to a directory under `target/sparse_correlations/`. Computing all coexpression matrices should complete in around an hour when running on a single core.
 
 The downstream analysis can then be performed on these cached matrices using the commands:
-```
+```bash
 python bin/mouse_develop_cached.py >> mouse_develop.log
 python bin/mouse_develop_dictionary.py >> mouse_develop.log
 ```
