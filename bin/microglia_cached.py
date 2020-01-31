@@ -12,7 +12,7 @@ from sklearn.random_projection import SparseRandomProjection
 from draw_graph import draw_graph
 from utils import *
 
-NAMESPACE = 'microglia_spearman_louvain'
+NAMESPACE = 'microglia'
 
 N_COMPONENTS = 20
 INIT = 'eigen'

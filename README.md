@@ -36,7 +36,7 @@ Xs_coexpr, sample_idxs = trajectorama.transform(
 
 The coexpression matrix `Xs_coexpr[i]` is defined over the subset of cells `X[sample_idxs[i], :]`. **See the documentation string under the `transform()` function at the top of [trajectorama/trajectorama.py](trajectorama/trajectorama.py) for the full list of parameters and default values.**
 
-This list of coexpression matrices can then be used in further analysis, e.g., you can flatten the matrices and use [Scanpy](https://scanpy.readthedocs.io/) to visualize the matrices as a KNN graph:
+This list of coexpression matrices can then be used in further analysis, e.g., you can flatten the matrices and use [Scanpy](https://scanpy.readthedocs.io/) to visualize the matrices as a KNN graph based on distance in coexpression space:
 ```python
 import numpy as np
 import scanpy as sc
@@ -103,6 +103,39 @@ python bin/process.py conf/hematopoiesis.txt
 python bin/hematopoiesis.py > hematopoiesis.log
 python bin/hematopoiesis_cached.py >> hematopoiesis.log
 python bin/hematopoiesis_dictionary.py >> hematopoiesis.log
+```
+
+### Trajectorama for human hematopoiesis
+
+We can perform a similar workflow for human hematopoiesis by running the commands:
+```
+# Download (if not done so for mouse data).
+wget http://trajectorama.csail.mit.edu/data.tar.gz
+tar xvf data.tar.gz
+
+# Preprocess.
+python bin/process.py conf/hematopoiesis.txt
+
+# Analyze.
+python bin/hematopoiesis.py > hematopoiesis.log
+python bin/hematopoiesis_cached.py >> hematopoiesis.log
+python bin/hematopoiesis_dictionary.py >> hematopoiesis.log
+```
+
+### Trajectorama for microglia
+
+We can perform a similar workflow for mouse and human microglia in various conditions by running the commands:
+```
+# Download (if not done so for mouse data).
+wget http://trajectorama.csail.mit.edu/data.tar.gz
+tar xvf data.tar.gz
+
+# Preprocess.
+python bin/process.py conf/microglia.txt
+
+# Analyze.
+python bin/microglia.py > microglia.log
+python bin/microglia_cached.py >> microglia.log
 ```
 
 ### Questions

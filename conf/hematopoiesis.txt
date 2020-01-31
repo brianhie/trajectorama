@@ -11,3 +11,6 @@ data/pbmc/10x/naive_cytotoxic_t
 data/pbmc/10x/naive_t
 data/pbmc/10x/regulatory_t
 data/pbmc/68k
+data/thymus/zeng2019/GSM3906003_w8_thymus_10x_rawdata
+data/thymus/zeng2019/GSM3906005_w9_thymus_10x_rawdata
+data/thymus/zeng2019/GSM3906004_w10_thymus_10x_rawdata

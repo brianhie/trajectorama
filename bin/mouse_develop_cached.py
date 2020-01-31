@@ -21,7 +21,7 @@ VIZ_AGE = True
 VIZ_KNN = False
 VIZ_SPARSITY = False
 VIZ_STUDY = False
-VIZ_DICT_LEARN = True
+VIZ_DICT_LEARN = False
 VIZ_CORR_PSEUDOTIME = False
 
 def srp_worker(X, srp, triu_idx):

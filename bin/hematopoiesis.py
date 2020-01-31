@@ -9,7 +9,7 @@ from draw_graph import draw_graph
 from process import merge_datasets
 from utils import *
 
-NAMESPACE = 'hematopoiesis_test'
+NAMESPACE = 'hematopoiesis'
 
 def import_data():
     all_datasets, all_namespaces, all_dimreds = [], [], []

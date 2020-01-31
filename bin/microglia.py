@@ -96,7 +96,7 @@ if __name__ == '__main__':
         X, cell_types,
         X_dimred=np.concatenate(all_dimreds),
         log_transform=False,
-        corr_cutoff=0.7,
+        corr_cutoff=0.1,
         corr_method='spearman',
         cluster_method='louvain',
         min_cluster_samples=500,
