@@ -91,7 +91,7 @@ This will log some relevant statistics and save visualizations under the `figure
 ### Trajectorama for human hematopoiesis
 
 We can perform a similar workflow for human hematopoiesis by running the commands:
-```
+```bash
 # Download (if not done so for mouse data).
 wget http://trajectorama.csail.mit.edu/data.tar.gz
 tar xvf data.tar.gz
@@ -108,7 +108,7 @@ python bin/hematopoiesis_dictionary.py >> hematopoiesis.log
 ### Trajectorama for microglia
 
 We can perform a similar workflow for mouse and human microglia in various conditions by running the commands:
-```
+```bash
 # Download (if not done so for mouse data).
 wget http://trajectorama.csail.mit.edu/data.tar.gz
 tar xvf data.tar.gz
