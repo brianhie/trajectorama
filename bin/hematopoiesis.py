@@ -33,7 +33,7 @@ def import_data():
 
     return all_datasets, all_namespaces, all_dimreds
 
-def count_cell_types(cell_types):
+def count_cell_types(cell_types, uniq_cell_types):
     counter = Counter(cell_types)
     n_values = float(sum(counter.values()))
     return [
@@ -105,17 +105,18 @@ if __name__ == '__main__':
         [ of.write('{}\n'.format(gene)) for gene in genes ]
 
     with open('{}/cluster_studies.txt'.format(dirname), 'w') as of:
-        of.write('hematopoiesis\n')
+        of.write('human_hematopoiesis\n')
         [ of.write('{}\n'.format(set(studies[sample_idx]).pop()))
           for sample_idx in sample_idxs[1:] ]
 
+    uniq_cell_types = sorted(set(cell_types))
     with open('{}/cell_type_composition.txt'.format(dirname), 'w') as of:
         of.write('node')
         for cell_type in uniq_cell_types:
             of.write('\t{}'.format(cell_type))
         of.write('\n')
         for node_idx, sample_idx in enumerate(sample_idxs):
-            fractions = count_cell_types(cell_types[sample_idx])
+            fractions = count_cell_types(cell_types[sample_idx], uniq_cell_types)
             of.write('{}\t'.format(node_idx))
             of.write('\t'.join([ str(frac) for frac in fractions ]) + '\n')
 
@@ -152,8 +153,7 @@ if __name__ == '__main__':
         X[np.isinf(X)] = 0
 
     C = np.vstack([
-        X[sample_idx].mean(0)
-        sample_idx in sample_idxs
+        X[sample_idx].mean(0) for sample_idx in sample_idxs
     ])
 
     adata = AnnData(X=C)
