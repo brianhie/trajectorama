@@ -67,7 +67,7 @@ if __name__ == '__main__':
             continue
 
         X = ss.load_npz(dirname + '/' + fname)
-        sparse_cutoff = 50000
+        sparse_cutoff = 100000
         if len(X.data) > sparse_cutoff:
             cutoff = sorted(-abs(X.data))[sparse_cutoff - 1]
             X[abs(X) < abs(cutoff)] = 0
