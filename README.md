@@ -1,7 +1,7 @@
 
 # Trajectorama
 
-Trajectorama is an algorithm that implements coexpression-based integration of multi-study single-cell trajectories. Trajectorama is described in the paper ["Coexpression enables multi-study cellular trajectories of development and disease"](https://www.biorxiv.org/content/10.1101/719088v1) by Brian Hie, Hyunghoon Cho, Bryan Bryson, and Bonnie Berger.
+Trajectorama is an algorithm that implements coexpression-based integration of multi-study single-cell trajectories. Trajectorama is described in the paper ["Coexpression enables multi-study cellular trajectories of development and disease"](https://www.biorxiv.org/content/10.1101/719088v2) by Brian Hie, Hyunghoon Cho, Bryan Bryson, and Bonnie Berger.
 
 ## Installation
 
