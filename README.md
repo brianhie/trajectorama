@@ -46,7 +46,7 @@ from anndata import AnnData
 n_features = X.shape[1]
 triu_idx = np.triu_indices(n_features) # Indices of upper triangle.
 X_coexpr = np.concatenate([
-    X_coexpr[triu_idx].flatten() for X_coexpr in X_coeprs
+    X_coexpr[triu_idx].flatten() for X_coexpr in X_coexprs
 ])
 
 # Plot KNN graph in coexpression space.
