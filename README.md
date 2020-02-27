@@ -7,6 +7,9 @@ Trajectorama is an algorithm that implements coexpression-based integration of m
 
 The most import dependency is on a [custom implementation](https://github.com/brianhie/louvain-igraph) of Louvain clustering, which can be installed with the below commands:
 ```
+# Binary dependency (for Ubuntu/Debian).
+sudo apt-get install bison flex
+
 git clone https://github.com/brianhie/louvain-igraph
 cd louvain-igraph
 python setup.py install
