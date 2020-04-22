@@ -41,9 +41,10 @@ The coexpression matrix `Xs_coexpr[i]` is defined over the subset of cells `X[sa
 
 This list of coexpression matrices can then be used in further analysis, e.g., you can flatten the matrices and use [Scanpy](https://scanpy.readthedocs.io/) to visualize the matrices as a KNN graph based on distance in coexpression space:
 ```python
+from anndata import AnnData
 import numpy as np
 import scanpy as sc
-from anndata import AnnData
+from scipy.sparse import csr_matrix
 
 # Save upper triangle and flatten.
 n_features = X.shape[1]
@@ -51,6 +52,7 @@ triu_idx = np.triu_indices(n_features) # Indices of upper triangle.
 X_coexpr = np.concatenate([
     X_coexpr_i[triu_idx].flatten() for X_coexpr_i in X_coexprs
 ])
+X_coexpr = csr_matrix(X_coexpr)
 
 # Plot KNN graph in coexpression space.
 adata = AnnData(X_coexpr)
