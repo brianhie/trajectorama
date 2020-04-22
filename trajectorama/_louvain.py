@@ -7,7 +7,7 @@ from natsort import natsorted
 from numpy.random.mtrand import RandomState
 from scipy.sparse import spmatrix
 
-from scanpy import utils
+from scanpy import _utils as utils
 from scanpy import logging as logg
 
 from scanpy.tools._utils_clustering import rename_groups, restrict_adjacency
