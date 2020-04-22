@@ -14,6 +14,9 @@ git clone https://github.com/brianhie/louvain-igraph
 cd louvain-igraph
 python setup.py install
 ```
+
+**Troubleshooting:** To avoid conflicts with the main version of `louvain-igraph`, install the custom Louvain package first in a new [conda environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html) prior to installation of any downstream dependencies (like `scanpy` and `trajectorama`).
+
 Installing Trajectorama can then be done by:
 ```
 python -m pip install trajectorama
