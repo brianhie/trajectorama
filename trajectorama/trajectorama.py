@@ -165,7 +165,7 @@ def _check_X(X):
     else:
         raise TypeError('Dataset must be numpy array or '
                         'scipy.sparse.csr_matrix, received type '
-                        '{}.\n'.format(type(ds)))
+                        '{}.\n'.format(type(X)))
         exit(1)
     return X
 
